@@ -1,0 +1,242 @@
+.ls{
+    background: #001030;
+    color: white;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.ls-top{
+    padding: 20px;
+}
+
+.ls-nav{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ls-nav .logo{
+    max-width: 140px;
+}
+
+.ls-nav .menu img{
+    max-height: 20px;
+    opacity: 0.6;
+    cursor: pointer;
+}
+
+.ls-search{
+    background-color: #002670;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-top: 20px;
+}
+
+.ls-search img{
+    width: 16px;
+}
+
+.ls-search input{
+    background: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    font-size: 11px;
+}
+
+.ls-search input::placeholder{
+    color: #c8c8c8;
+}
+
+.ls-list{
+    display: flex;
+    flex-direction: column;
+    height: 70%;
+    overflow-y: scroll;
+}
+
+.friends img{
+    width: 35px;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+}
+
+.friends{
+    display: flex;
+    flex-direction: row; /* ✅ row so avatar + info sit side by side */
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+/* ✅ REMOVED .friends div rule — it was overriding nested divs */
+
+.friends span{
+    color: #9f9f9f;
+    font-size: 11px;
+}
+
+.friends:hover{
+    background-color: #077eff;
+}
+
+.friends:hover span{
+    color: white;
+}
+
+.ls-nav .menu{
+    position: relative;
+    padding: 10px 0px;
+}
+
+.menu .sub-menu {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  width: 130px;
+  padding: 12px;
+  border-radius: 5px;
+  background-color: whitesmoke;
+  color: black;
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.sub-menu hr{
+    border: none;
+    height: 1px;
+    background: #5a1a1a;
+    margin: 8px 0px;
+}
+
+.sub-menu p{
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+
+.sub-menu p:hover{
+    background: #e8e8e8;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.ls-empty {
+    padding: 20px;
+    color: gray;
+    text-align: center;
+}
+
+.ls-no-user {
+    padding: 20px;
+    color: gray;
+    text-align: center;
+}
+
+.friend-avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.friend-avatar-wrapper img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.online-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+/* ✅ friend-info: column layout, left aligned */
+.friend-info {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.friend-name {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  margin-bottom: 3px;
+}
+
+/* ✅ bottom row: preview left, meta right — horizontal */
+.friend-bottom-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.friend-preview {
+  font-size: 12px;
+  color: #aaa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ✅ meta: time + badge side by side */
+.friend-meta {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+
+.friend-time {
+  font-size: 11px;
+  color: #aaa;
+  white-space: nowrap;
+}
+
+.unread-badge {
+  background: green;
+  color: white;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  
+}
+
+.active-chat {
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+}
