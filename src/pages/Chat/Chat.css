@@ -53,3 +53,34 @@
   min-width: 300px;
   flex-shrink: 0;
 }
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .chat {
+    align-items: flex-start;
+    padding: 0;
+  }
+
+  .chat-container {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    flex-direction: column;
+  }
+
+  /* Hide right sidebar on mobile */
+  .rs {
+    display: none;
+  }
+
+  /* Left sidebar takes full width when shown */
+  .ls {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* Middle box takes full screen */
+  .chat-box {
+    width: 100vw;
+    height: 100vh;
+  }
+}
