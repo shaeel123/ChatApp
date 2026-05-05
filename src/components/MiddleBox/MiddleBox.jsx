@@ -119,11 +119,13 @@ const MiddleBox = () => {
   const [user, setUser] = useState(null)
   const [showEmoji, setShowEmoji] = useState(false)
   const [previewImg, setPreviewImg] = useState(null)
+  const [previewVideo, setPreviewVideo] = useState(null)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
   const [muted, setMuted] = useState(true)
   const [showWallpaperPicker, setShowWallpaperPicker] = useState(false)
   const [wallpaper, setWallpaper] = useState(DEFAULT_WALLPAPERS[0])
   const [hoveredMsgId, setHoveredMsgId] = useState(null)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
 
   const messagesEndRef = useRef(null)
   const chatMsgRef = useRef(null)
@@ -167,13 +169,12 @@ const MiddleBox = () => {
       setCurrentUserId(data.user.id)
       if (!chatUser) return
       await fetchMessages(data.user.id, chatUser.id)
-      // Mark messages from chatUser as read
-await supabase
-  .from('messages')
-  .update({ is_read: true })
-  .eq('receiver_id', data.user.id)
-  .eq('user_id', chatUser.id)
-  .eq('is_read', false)
+      await supabase
+        .from('messages')
+        .update({ is_read: true })
+        .eq('receiver_id', data.user.id)
+        .eq('user_id', chatUser.id)
+        .eq('is_read', false)
       channel = supabase
         .channel(`chat-${data.user.id}-${chatUser.id}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
@@ -247,6 +248,37 @@ await supabase
     if (error) console.error("Send image error:", error)
   }
 
+  // ✅ NEW: Send video
+  const sendVideo = async (file) => {
+    if (!file || !user || !chatUser) return
+    // 50MB limit
+    if (file.size > 50 * 1024 * 1024) {
+      alert('Video is too large. Please upload a video under 50MB.')
+      return
+    }
+    setUploadingVideo(true)
+    const filePath = `${user.id}/messages/${Date.now()}_${file.name}`
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { contentType: file.type })
+    if (uploadError) {
+      console.error("Video upload error:", uploadError)
+      setUploadingVideo(false)
+      return
+    }
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+    const { error } = await supabase.from('messages').insert([{
+      content: '',
+      video_url: urlData.publicUrl,
+      user_id: user.id,
+      receiver_id: chatUser.id,
+      username: user.email,
+      avatar_url: userData?.avatar_url
+    }])
+    if (error) console.error("Send video error:", error)
+    setUploadingVideo(false)
+  }
+
   const deleteMessage = async (msgId) => {
     const { error } = await supabase.from('messages').delete().eq('id', msgId)
     if (error) { console.error(error); return }
@@ -259,7 +291,6 @@ await supabase
     setHoveredMsgId(null)
   }
 
-  // ✅ Hover handlers with 400ms delay on leave
   const handleBubbleEnter = (msgId) => {
     clearTimeout(hoverTimer.current)
     setHoveredMsgId(msgId)
@@ -304,7 +335,7 @@ await supabase
       <div className='chat-box chat-welcome'>
         <video
           className="welcome-video"
-          src="/chatapp-demo.mp4"
+          src="/Chatapp-video.mp4"
           autoPlay
           loop
           playsInline
@@ -391,7 +422,6 @@ await supabase
               <div className="msg-wrapper">
 
                 {msg.image_url ? (
-                  // ✅ Image bubble — hover only on the image
                   <div
                     style={{ position: 'relative', display: 'inline-block' }}
                     onMouseEnter={() => handleBubbleEnter(msg.id)}
@@ -412,8 +442,41 @@ await supabase
                       </div>
                     )}
                   </div>
+
+                ) : msg.video_url ? (
+                  // ✅ NEW: Video bubble
+                  <div
+                    style={{ position: 'relative', display: 'inline-block' }}
+                    onMouseEnter={() => handleBubbleEnter(msg.id)}
+                    onMouseLeave={handleBubbleLeave}
+                  >
+                    <div className="chat-video-wrapper" style={{ width: '260px', maxWidth: '260px' }}>
+  <video
+    src={msg.video_url}
+    className="chat-video"
+    controls
+    preload="metadata"
+    onClick={(e) => e.stopPropagation()}
+  />
+  <button
+    className="video-fullscreen-btn"
+    title="Open fullscreen"
+    onClick={() => setPreviewVideo(msg.video_url)}
+  >
+    ⛶
+  </button>
+</div>
+                    {isHovered && isMe && (
+                      <div className="msg-context-menu menu-left"
+                        onMouseEnter={() => clearTimeout(hoverTimer.current)}
+                        onMouseLeave={handleBubbleLeave}
+                      >
+                        <button onClick={() => deleteMessage(msg.id)}>🗑 Delete</button>
+                      </div>
+                    )}
+                  </div>
+
                 ) : (
-                  // ✅ Text bubble — hover only on the <p> bubble
                   <div
                     style={{ position: 'relative', display: 'inline-block' }}
                     onMouseEnter={() => handleBubbleEnter(msg.id)}
@@ -463,6 +526,14 @@ await supabase
             </div>
           )
         })}
+
+        {/* ✅ Video uploading indicator */}
+        {uploadingVideo && (
+          <div style={{ textAlign: 'center', padding: '8px', fontSize: '13px', color: 'gray' }}>
+            📤 Uploading video...
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -493,6 +564,7 @@ await supabase
 
         <span className="emoji-btn" onClick={() => setShowEmoji((prev) => !prev)}>😊</span>
 
+        {/* Image upload */}
         <input
           type="file"
           id="image"
@@ -508,14 +580,47 @@ await supabase
           <img src={assets.gallery_icon} alt="" className="gallery-btn" />
         </label>
 
+        {/* ✅ NEW: Video upload button */}
+        <input
+          type="file"
+          id="video-upload"
+          accept="video/*"
+          hidden
+          onChange={async (e) => {
+            const file = e.target.files[0]
+            if (file) await sendVideo(file)
+            e.target.value = ''
+          }}
+        />
+        <label htmlFor="video-upload" title="Send video" style={{ cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>
+          🎥
+        </label>
+
         <img src={assets.send_button} alt="" onClick={sendMessage} />
       </div>
 
+      {/* Image preview portal */}
       {previewImg && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setPreviewImg(null)}>
           <div className="img-preview-box" onClick={(e) => e.stopPropagation()}>
             <img src={previewImg} alt="preview" />
             <button className="img-preview-close" onClick={() => setPreviewImg(null)}>✕</button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ✅ NEW: Video preview portal (fullscreen) */}
+      {previewVideo && ReactDOM.createPortal(
+        <div className="img-preview-overlay" onClick={() => setPreviewVideo(null)}>
+          <div className="img-preview-box video-preview-box" onClick={(e) => e.stopPropagation()}>
+            <video
+              src={previewVideo}
+              controls
+              autoPlay
+              style={{ maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px' }}
+            />
+            <button className="img-preview-close" onClick={() => setPreviewVideo(null)}>✕</button>
           </div>
         </div>,
         document.body

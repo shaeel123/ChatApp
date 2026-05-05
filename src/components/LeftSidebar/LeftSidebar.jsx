@@ -260,8 +260,8 @@ const LeftSidebar = () => {
 
                   {/* Bottom: message (left) + time + badge (right) */}
                   <div className="friend-bottom-row">
-                    <span className="friend-preview">
-                      {user.latestMsg?.image_url ? '📷 Image' : truncate(user.latestMsg?.content)}
+                    <span className="friend-preview">{user.latestMsg?.image_url ? '📷 Image' : user.latestMsg?.video_url ? '🎥 Video' : truncate(user.latestMsg?.content)}
+                      
                     </span>
                     <div className="friend-meta">
                       <span className="friend-time">{formatTime(user.latestMsg?.created_at)}</span>

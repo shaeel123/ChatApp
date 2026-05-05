@@ -3,7 +3,7 @@
     background: #001030;
     position: relative;
     height: 100%;
-    overflow-y:auto ;
+    overflow-y: auto;
 }
 
 .rs-profile{
@@ -37,7 +37,7 @@
 
 .rs hr{
     border-color: #ffffff50;
-    margin:15px 0px;
+    margin: 15px 0px;
 }
 
 .rs-media{
@@ -54,10 +54,14 @@
     margin-top: 8px;
 }
 
-.rs-media div img{
-    width: 80px;
+/* ✅ FIX: target both img and video inside the grid */
+.rs-media div img,
+.rs-media div video {
+    width: 100%;
+    aspect-ratio: 1/1;
+    object-fit: cover;
     border-radius: 4px;
-    cursor: pointer;
+    display: block;
 }
 
 .rs button{
@@ -72,24 +76,134 @@
     font-weight: 300;
     padding: 10px 65px;
     border-radius: 20px;
-    cursor:pointer;
+    cursor: pointer;
 }
+
 /* Empty state */
 .rs-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: gray;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: gray;
 }
 
 /* No media text */
 .rs-no-media {
-  color: gray;
-  font-size: 13px;
-  padding: 10px 0;
+    color: gray;
+    font-size: 13px;
+    padding: 10px 0;
 }
 
+/* ✅ FIX: media items fill their grid cell */
 .rs-media-img {
-  cursor: pointer;
+    width: 100%;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+    cursor: pointer;
+}
+
+.rs-media-video-thumb {
+    position: relative;
+    cursor: pointer;
+    width: 100%;
+    aspect-ratio: 1/1;
+}
+
+/* ✅ FIX: video inside thumb fills the cell */
+.rs-media-video-thumb video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+    pointer-events: none;
+}
+
+.rs-video-play-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.55);
+    color: white;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    pointer-events: none;
+}
+
+/* Image preview overlay (shared with MiddleBox) */
+.img-preview-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.80);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    backdrop-filter: blur(6px);
+    animation: fadeIn 0.2s ease;
+}
+
+.img-preview-box {
+    position: relative;
+    width: 800px;
+    max-width: 80vw;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+    animation: scaleIn 0.2s ease;
+}
+
+.img-preview-box img {
+    display: block;
+    width: 100%;
+    border-radius: 16px;
+}
+
+.img-preview-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.img-preview-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.video-preview-box {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.85); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
 }

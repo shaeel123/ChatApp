@@ -8,8 +8,8 @@
 
 .chat-container {
   display: flex;
-  width: 900px;
-  height: 550px;   /* VERY IMPORTANT */
+  width: 1100px;  /* was 900px */
+  height:575px;  /* was 550px, optional */
   border-radius: 10px;
   overflow: hidden;
   background: white;
@@ -38,4 +38,18 @@
 .home-btn:hover {
   background: rgba(255, 255, 255, 0.25);
   transform: scale(1.05);
+}
+
+/* MiddleBox always takes remaining space, never shrinks */
+.chat-box {
+  flex: 1;
+  min-width: 0;
+  width: 0; /* forces flex to control width, not content */
+}
+
+/* RightSidebar fixed width, never grows or shrinks */
+.rs {
+  width: 300px;
+  min-width: 300px;
+  flex-shrink: 0;
 }

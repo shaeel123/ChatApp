@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { toast } from 'react-toastify'
 
-const supabaseUrl = "https://lvjfvohpbtrdzrbmukjc.supabase.co"
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2amZ2b2hwYnRyZHpyYm11a2pjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MjcxNTMsImV4cCI6MjA5MjQwMzE1M30.tMbxh0zpJkWEZkBp8XqyrtLWuL4Ai-nGbKHehdDdKNk"
-
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     lock: async (name, acquireTimeout, fn) => {
