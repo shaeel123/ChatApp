@@ -159,48 +159,53 @@ const MiddleBox = () => {
   }
 
   const sendImage = async (file) => {
-  if (!file || !chatUser) {
-    alert('EARLY EXIT')
-    return
-  }
+  if (!file || !chatUser) { alert('EARLY EXIT'); return }
   const cu = await getCurrentUser()
   if (!cu) { alert('NO USER'); return }
   alert('USER OK')
 
+  const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
+  const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
+  if (uploadError) { alert('UPLOAD ERROR: ' + uploadError.message); return }
+  alert('UPLOAD OK')
+
+  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+
+  // ✅ Use native fetch instead of Supabase client for iOS compatibility
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData?.session?.access_token
+  alert('TOKEN: ' + (token ? 'YES' : 'NO'))
+
   try {
-    const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
-    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
-    if (uploadError) { alert('UPLOAD ERROR: ' + uploadError.message); return }
-    alert('UPLOAD OK')
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        content: '',
+        image_url: urlData.publicUrl,
+        user_id: cu.id,
+        receiver_id: chatUser.id,
+        username: cu.email,
+        avatar_url: userData?.avatar_url || null
+      })
+    })
 
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+    const result = await res.json()
+    alert('FETCH RESULT: ' + JSON.stringify(result))
 
-    try {
-      const { data: insertedArr, error } = await supabase
-        .from('messages')
-        .insert([{
-          content: '',
-          image_url: urlData.publicUrl,
-          user_id: cu.id,
-          receiver_id: chatUser.id,
-          username: cu.email,
-          avatar_url: userData?.avatar_url
-        }])
-        .select()
-
-      alert('INSERT DONE - error:' + JSON.stringify(error) + ' rows:' + (insertedArr?.length))
-
-      if (!error && insertedArr?.[0]) {
-        setMessages((prev) => {
-          if (prev.find(m => m.id === insertedArr[0].id)) return prev
-          return [...prev, insertedArr[0]]
-        })
-      }
-    } catch (insertErr) {
-      alert('INSERT THREW: ' + insertErr.message)
+    if (Array.isArray(result) && result[0]) {
+      setMessages((prev) => {
+        if (prev.find(m => m.id === result[0].id)) return prev
+        return [...prev, result[0]]
+      })
     }
   } catch (err) {
-    alert('OUTER ERROR: ' + err.message)
+    alert('FETCH ERROR: ' + err.message)
   }
 }
 
