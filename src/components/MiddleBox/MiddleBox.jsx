@@ -192,8 +192,8 @@ const sendImage = async (file) => {
     .select()
     .single()
 
-  if (error) {
-    alert('INSERT ERROR: ' + error.message)
+ if (error) {
+    alert('INSERT ERROR: ' + JSON.stringify(error))
     return
   }
   alert('INSERT OK: ' + inserted.id)
