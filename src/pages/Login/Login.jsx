@@ -28,7 +28,7 @@ const Login = () => {
     gap: '30px'
   } : {}
 
-  const mobileLogo = mobile ? { width: '130px' } : {}
+  const mobileLogo = mobile ? { display: 'none' } : {}
 
   const mobileForm = mobile ? {
     width: '92vw',
