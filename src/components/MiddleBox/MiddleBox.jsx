@@ -240,46 +240,44 @@ const MiddleBox = () => {
   }
 
   const sendImage = async (file) => {
-    if (!file || !chatUser) return
+  if (!file || !chatUser) return
 
-    // ✅ Always resolve user fresh — fixes mobile where state may be null
-    const currentUser = await getValidUser(user)
-    if (!currentUser) {
-      alert('Not logged in. Please refresh and try again.')
-      return
-    }
-
-    alert(`Starting upload - user: ${currentUser.id}`)
-
-    const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file)
-
-    if (uploadError) {
-      console.error('Image upload error:', uploadError)
-      alert('Upload failed: ' + uploadError.message)
-      return
-    }
-
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-
-    const { error } = await supabase.from('messages').insert([{
-      content: '',
-      image_url: urlData.publicUrl,
-      user_id: currentUser.id,
-      receiver_id: chatUser.id,
-      username: currentUser.email,
-      avatar_url: userData?.avatar_url
-    }])
-
-    if (error) {
-      console.error('Send image error:', error)
-      alert('Message failed: ' + error.message)
-    }
+  const currentUser = await getValidUser(user)
+  if (!currentUser) {
+    alert('Not logged in. Please refresh and try again.')
+    return
   }
 
+  alert(`Starting upload - user: ${currentUser.id}`)
+
+  const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file)
+
+  if (uploadError) {
+    alert('UPLOAD FAILED: ' + uploadError.message) // ✅ added
+    return
+  }
+
+  alert('Upload success! Now inserting message...') // ✅ added
+
+  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+
+  const { error } = await supabase.from('messages').insert([{
+    content: '',
+    image_url: urlData.publicUrl,
+    user_id: currentUser.id,
+    receiver_id: chatUser.id,
+    username: currentUser.email,
+    avatar_url: userData?.avatar_url
+  }])
+
+  if (error) {
+    alert('INSERT FAILED: ' + error.message) // ✅ already there
+  }
+}
   const sendVideo = async (file) => {
     if (!file || !chatUser) return
 
