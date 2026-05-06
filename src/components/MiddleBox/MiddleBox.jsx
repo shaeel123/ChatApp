@@ -159,51 +159,50 @@ const MiddleBox = () => {
   }
 
   const sendImage = async (file) => {
-    if (!file || !chatUser) {
-      alert('EARLY EXIT - file:' + !!file + ' chatUser:' + !!chatUser)
-      return
-    }
-    const cu = await getCurrentUser()
-    if (!cu) {
-      alert('NO USER FOUND')
-      return
-    }
-    alert('USER OK: ' + cu.id)
+  if (!file || !chatUser) {
+    alert('EARLY EXIT')
+    return
+  }
+  const cu = await getCurrentUser()
+  if (!cu) { alert('NO USER'); return }
+  alert('USER OK')
 
+  try {
     const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
     const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
-    if (uploadError) {
-      alert('UPLOAD ERROR: ' + uploadError.message)
-      return
-    }
+    if (uploadError) { alert('UPLOAD ERROR: ' + uploadError.message); return }
     alert('UPLOAD OK')
 
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
 
-    const { data: insertedArr, error } = await supabase
-      .from('messages')
-      .insert([{
-        content: '',
-        image_url: urlData.publicUrl,
-        user_id: cu.id,
-        receiver_id: chatUser.id,
-        username: cu.email,
-        avatar_url: userData?.avatar_url
-      }])
-      .select()
+    try {
+      const { data: insertedArr, error } = await supabase
+        .from('messages')
+        .insert([{
+          content: '',
+          image_url: urlData.publicUrl,
+          user_id: cu.id,
+          receiver_id: chatUser.id,
+          username: cu.email,
+          avatar_url: userData?.avatar_url
+        }])
+        .select()
 
-    alert('AFTER INSERT - error: ' + JSON.stringify(error) + ' data: ' + JSON.stringify(insertedArr))
+      alert('INSERT DONE - error:' + JSON.stringify(error) + ' rows:' + (insertedArr?.length))
 
-    if (error) return
-
-    const inserted = insertedArr?.[0]
-    if (inserted) {
-      setMessages((prev) => {
-        if (prev.find(m => m.id === inserted.id)) return prev
-        return [...prev, inserted]
-      })
+      if (!error && insertedArr?.[0]) {
+        setMessages((prev) => {
+          if (prev.find(m => m.id === insertedArr[0].id)) return prev
+          return [...prev, insertedArr[0]]
+        })
+      }
+    } catch (insertErr) {
+      alert('INSERT THREW: ' + insertErr.message)
     }
+  } catch (err) {
+    alert('OUTER ERROR: ' + err.message)
   }
+}
 
   const sendVideo = async (file) => {
     if (!file || !chatUser) return
