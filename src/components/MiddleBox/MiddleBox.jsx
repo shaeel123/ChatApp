@@ -75,7 +75,6 @@ const MiddleBox = () => {
     if (!error) setMessages(data)
   }
 
-  // ✅ Always get a valid user — from ref, state, or fresh auth call
   const getCurrentUser = async () => {
     if (userRef.current) return userRef.current
     const { data } = await supabase.auth.getUser()
@@ -160,15 +159,28 @@ const MiddleBox = () => {
   }
 
   const sendImage = async (file) => {
-    if (!file || !chatUser) return
+    if (!file || !chatUser) {
+      console.log('EARLY EXIT - file:', !!file, 'chatUser:', !!chatUser)
+      return
+    }
     const cu = await getCurrentUser()
-    if (!cu) return
+    if (!cu) {
+      console.log('NO USER FOUND')
+      return
+    }
+    console.log('USER OK:', cu.id)
+    console.log('FILE:', file.name, file.size, file.type)
 
     const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
     const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
-    if (uploadError) { console.error('Image upload error:', uploadError); return }
+    if (uploadError) {
+      console.log('UPLOAD ERROR:', uploadError.message)
+      return
+    }
+    console.log('UPLOAD OK')
 
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+    console.log('URL:', urlData.publicUrl)
 
     const { data: inserted, error } = await supabase
       .from('messages')
@@ -183,13 +195,17 @@ const MiddleBox = () => {
       .select()
       .single()
 
-    if (error) { console.error('Send image error:', error); return }
+    if (error) {
+      console.log('INSERT ERROR:', error.message)
+      return
+    }
+    console.log('INSERT OK:', inserted.id)
 
-    // ✅ Immediately append to state — no waiting for realtime
     setMessages((prev) => {
       if (prev.find(m => m.id === inserted.id)) return prev
       return [...prev, inserted]
     })
+    console.log('STATE UPDATED')
   }
 
   const sendVideo = async (file) => {
@@ -226,9 +242,8 @@ const MiddleBox = () => {
       .select()
       .single()
 
-    if (error) { console.error('Send video error:', error); }
+    if (error) { console.error('Send video error:', error) }
     else {
-      // ✅ Immediately append to state — no waiting for realtime
       setMessages((prev) => {
         if (prev.find(m => m.id === inserted.id)) return prev
         return [...prev, inserted]
