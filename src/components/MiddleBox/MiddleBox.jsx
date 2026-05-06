@@ -196,7 +196,7 @@ const sendImage = async (file) => {
     alert('INSERT ERROR: ' + JSON.stringify(error))
     return
   }
-  alert('INSERT OK: ' + inserted.id)
+ alert('INSERT OK: ' + JSON.stringify(inserted))
 
   setMessages((prev) => {
     if (prev.find(m => m.id === inserted.id)) return prev
