@@ -9,106 +9,16 @@ import ReactDOM from 'react-dom'
 const DEFAULT_AVATAR = assets.avatar_icon
 
 const DEFAULT_WALLPAPERS = [
-  {
-    id: 'default',
-    label: 'Default',
-    bg: '#f1f5ff',
-    bubbleSent: '#077eff',
-    bubbleReceived: '#e4e6eb',
-    inputBar: 'white',
-    textSent: 'white',
-    textReceived: 'black',
-  },
-  {
-    id: 'instagram',
-    label: 'Instagram',
-    bg: 'linear-gradient(180deg, #833ab4, #fd1d1d, #fcb045)',
-    bubbleSent: 'linear-gradient(90deg, #833ab4, #fd1d1d)',
-    bubbleReceived: 'rgba(255,255,255,0.25)',
-    inputBar: 'rgba(255,255,255,0.15)',
-    textSent: 'white',
-    textReceived: 'white',
-  },
-  {
-    id: 'midnight',
-    label: 'Midnight',
-    bg: 'linear-gradient(180deg, #0f0c29, #302b63, #24243e)',
-    bubbleSent: '#6c63ff',
-    bubbleReceived: 'rgba(255,255,255,0.15)',
-    inputBar: '#1a1a2e',
-    textSent: 'white',
-    textReceived: 'white',
-  },
-  {
-    id: 'ocean',
-    label: 'Ocean',
-    bg: 'linear-gradient(180deg, #2193b0, #6dd5ed)',
-    bubbleSent: '#005f73',
-    bubbleReceived: 'rgba(255,255,255,0.3)',
-    inputBar: '#2193b0',
-    textSent: 'white',
-    textReceived: 'white',
-  },
-  {
-    id: 'sunset',
-    label: 'Sunset',
-    bg: 'linear-gradient(180deg, #f7797d, #FBD786, #C6FFDD)',
-    bubbleSent: '#f7797d',
-    bubbleReceived: 'rgba(255,255,255,0.35)',
-    inputBar: '#f9a8a8',
-    textSent: 'white',
-    textReceived: '#333',
-  },
-  {
-    id: 'forest',
-    label: 'Forest',
-    bg: 'linear-gradient(180deg, #134e5e, #71b280)',
-    bubbleSent: '#134e5e',
-    bubbleReceived: 'rgba(255,255,255,0.25)',
-    inputBar: '#1a5c45',
-    textSent: 'white',
-    textReceived: 'white',
-  },
-  {
-    id: 'candy',
-    label: 'Candy',
-    bg: 'linear-gradient(180deg, #fc5c7d, #6a3093)',
-    bubbleSent: '#6a3093',
-    bubbleReceived: 'rgba(255,255,255,0.25)',
-    inputBar: '#fc5c7d',
-    textSent: 'white',
-    textReceived: 'white',
-  },
-  {
-    id: 'gold',
-    label: 'Gold',
-    bg: 'linear-gradient(180deg, #f7971e, #ffd200)',
-    bubbleSent: '#c47d00',
-    bubbleReceived: 'rgba(255,255,255,0.35)',
-    inputBar: '#f7971e',
-    textSent: 'white',
-    textReceived: '#333',
-  },
-  {
-    id: 'rose',
-    label: 'Rose',
-    bg: 'linear-gradient(180deg, #f953c6, #b91d73)',
-    bubbleSent: '#b91d73',
-    bubbleReceived: 'rgba(255,255,255,0.25)',
-    inputBar: '#f953c6',
-    textSent: 'white',
-    textReceived: 'white',
-  },
-  {
-    id: 'space',
-    label: 'Space',
-    bg: 'linear-gradient(180deg, #000000, #434343)',
-    bubbleSent: '#434343',
-    bubbleReceived: 'rgba(255,255,255,0.12)',
-    inputBar: '#111',
-    textSent: 'white',
-    textReceived: 'white',
-  },
+  { id: 'default', label: 'Default', bg: '#f1f5ff', bubbleSent: '#077eff', bubbleReceived: '#e4e6eb', inputBar: 'white', textSent: 'white', textReceived: 'black' },
+  { id: 'instagram', label: 'Instagram', bg: 'linear-gradient(180deg, #833ab4, #fd1d1d, #fcb045)', bubbleSent: 'linear-gradient(90deg, #833ab4, #fd1d1d)', bubbleReceived: 'rgba(255,255,255,0.25)', inputBar: 'rgba(255,255,255,0.15)', textSent: 'white', textReceived: 'white' },
+  { id: 'midnight', label: 'Midnight', bg: 'linear-gradient(180deg, #0f0c29, #302b63, #24243e)', bubbleSent: '#6c63ff', bubbleReceived: 'rgba(255,255,255,0.15)', inputBar: '#1a1a2e', textSent: 'white', textReceived: 'white' },
+  { id: 'ocean', label: 'Ocean', bg: 'linear-gradient(180deg, #2193b0, #6dd5ed)', bubbleSent: '#005f73', bubbleReceived: 'rgba(255,255,255,0.3)', inputBar: '#2193b0', textSent: 'white', textReceived: 'white' },
+  { id: 'sunset', label: 'Sunset', bg: 'linear-gradient(180deg, #f7797d, #FBD786, #C6FFDD)', bubbleSent: '#f7797d', bubbleReceived: 'rgba(255,255,255,0.35)', inputBar: '#f9a8a8', textSent: 'white', textReceived: '#333' },
+  { id: 'forest', label: 'Forest', bg: 'linear-gradient(180deg, #134e5e, #71b280)', bubbleSent: '#134e5e', bubbleReceived: 'rgba(255,255,255,0.25)', inputBar: '#1a5c45', textSent: 'white', textReceived: 'white' },
+  { id: 'candy', label: 'Candy', bg: 'linear-gradient(180deg, #fc5c7d, #6a3093)', bubbleSent: '#6a3093', bubbleReceived: 'rgba(255,255,255,0.25)', inputBar: '#fc5c7d', textSent: 'white', textReceived: 'white' },
+  { id: 'gold', label: 'Gold', bg: 'linear-gradient(180deg, #f7971e, #ffd200)', bubbleSent: '#c47d00', bubbleReceived: 'rgba(255,255,255,0.35)', inputBar: '#f7971e', textSent: 'white', textReceived: '#333' },
+  { id: 'rose', label: 'Rose', bg: 'linear-gradient(180deg, #f953c6, #b91d73)', bubbleSent: '#b91d73', bubbleReceived: 'rgba(255,255,255,0.25)', inputBar: '#f953c6', textSent: 'white', textReceived: 'white' },
+  { id: 'space', label: 'Space', bg: 'linear-gradient(180deg, #000000, #434343)', bubbleSent: '#434343', bubbleReceived: 'rgba(255,255,255,0.12)', inputBar: '#111', textSent: 'white', textReceived: 'white' },
 ]
 
 // ✅ Helper: always get a valid user (state OR fresh auth call)
@@ -193,10 +103,7 @@ const MiddleBox = () => {
             ) {
               setMessages((prev) => {
                 if (prev.find(m => m.id === msg.id)) return prev
-                return [...prev, {
-                  ...msg,
-                  created_at: msg.created_at || new Date().toISOString()
-                }]
+                return [...prev, { ...msg, created_at: msg.created_at || new Date().toISOString() }]
               })
             }
           }
@@ -224,7 +131,6 @@ const MiddleBox = () => {
 
   const sendMessage = async () => {
     if (!input.trim() || !chatUser) return
-    // ✅ Always resolve user fresh in case state is stale
     const currentUser = await getValidUser(user)
     if (!currentUser) return
     const { error } = await supabase.from('messages').insert([{
@@ -240,44 +146,48 @@ const MiddleBox = () => {
   }
 
   const sendImage = async (file) => {
-  if (!file || !chatUser) return
+    if (!file || !chatUser) return
 
-  const currentUser = await getValidUser(user)
-  if (!currentUser) {
-    alert('Not logged in. Please refresh and try again.')
-    return
+    const currentUser = await getValidUser(user)
+    if (!currentUser) {
+      alert('Not logged in. Please refresh and try again.')
+      return
+    }
+
+    alert(`Starting upload - user: ${currentUser.id}`)
+
+    // ✅ Debug: show file info to catch HEIC or bad mime types
+    alert(`File name: ${file.name}, type: "${file.type}", size: ${file.size}`)
+
+    const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file)
+
+    if (uploadError) {
+      alert('UPLOAD FAILED: ' + uploadError.message)
+      return
+    }
+
+    alert('Upload success! Now inserting message...')
+
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+
+    const { error } = await supabase.from('messages').insert([{
+      content: '',
+      image_url: urlData.publicUrl,
+      user_id: currentUser.id,
+      receiver_id: chatUser.id,
+      username: currentUser.email,
+      avatar_url: userData?.avatar_url
+    }])
+
+    if (error) {
+      alert('INSERT FAILED: ' + error.message)
+    }
   }
 
-  alert(`Starting upload - user: ${currentUser.id}`)
-
-  const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
-
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(filePath, file)
-
-  if (uploadError) {
-    alert('UPLOAD FAILED: ' + uploadError.message) // ✅ added
-    return
-  }
-
-  alert('Upload success! Now inserting message...') // ✅ added
-
-  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-
-  const { error } = await supabase.from('messages').insert([{
-    content: '',
-    image_url: urlData.publicUrl,
-    user_id: currentUser.id,
-    receiver_id: chatUser.id,
-    username: currentUser.email,
-    avatar_url: userData?.avatar_url
-  }])
-
-  if (error) {
-    alert('INSERT FAILED: ' + error.message) // ✅ already there
-  }
-}
   const sendVideo = async (file) => {
     if (!file || !chatUser) return
 
@@ -286,7 +196,6 @@ const MiddleBox = () => {
       return
     }
 
-    // ✅ Always resolve user fresh — fixes mobile where state may be null
     const currentUser = await getValidUser(user)
     if (!currentUser) {
       alert('Not logged in. Please refresh and try again.')
@@ -353,14 +262,9 @@ const MiddleBox = () => {
     if (!file) return
     const url = URL.createObjectURL(file)
     const custom = {
-      id: 'custom',
-      type: 'image',
-      value: url,
-      bubbleSent: '#077eff',
-      bubbleReceived: 'rgba(255,255,255,0.85)',
-      inputBar: 'rgba(255,255,255,0.9)',
-      textSent: 'white',
-      textReceived: 'black',
+      id: 'custom', type: 'image', value: url,
+      bubbleSent: '#077eff', bubbleReceived: 'rgba(255,255,255,0.85)',
+      inputBar: 'rgba(255,255,255,0.9)', textSent: 'white', textReceived: 'black',
     }
     setWallpaper(custom)
     localStorage.setItem(`theme_${chatUser.id}`, JSON.stringify(custom))
@@ -369,11 +273,7 @@ const MiddleBox = () => {
 
   const getChatMsgStyle = () => {
     if (wallpaper.type === 'image') {
-      return {
-        backgroundImage: `url(${wallpaper.value})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }
+      return { backgroundImage: `url(${wallpaper.value})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     }
     return { background: wallpaper.bg }
   }
@@ -381,14 +281,7 @@ const MiddleBox = () => {
   if (!chatUser) {
     return (
       <div className='chat-box chat-welcome'>
-        <video
-          className="welcome-video"
-          src="/Chatapp-video.mp4"
-          autoPlay
-          loop
-          playsInline
-          muted={muted}
-        />
+        <video className="welcome-video" src="/Chatapp-video.mp4" autoPlay loop playsInline muted={muted} />
         <button className="unmute-btn" onClick={() => setMuted((prev) => !prev)}>
           {muted ? '🔇 Click to unmute' : '🔊 Mute'}
         </button>
@@ -408,20 +301,11 @@ const MiddleBox = () => {
         />
         <p>
           {chatUser?.name?.trim() || "Unknown User"}
-          {chatUser?.is_online && (
-            <img className='dot' src={assets.green_dot} alt="" />
-          )}
+          {chatUser?.is_online && <img className='dot' src={assets.green_dot} alt="" />}
         </p>
 
         <div className="wallpaper-btn-wrapper">
-          <span
-            className="wallpaper-btn"
-            title="Change theme"
-            onClick={() => setShowWallpaperPicker((prev) => !prev)}
-          >
-            🎨
-          </span>
-
+          <span className="wallpaper-btn" title="Change theme" onClick={() => setShowWallpaperPicker((prev) => !prev)}>🎨</span>
           {showWallpaperPicker && (
             <div className="wallpaper-picker">
               <p className="wallpaper-picker-title">Choose Theme</p>
@@ -443,12 +327,7 @@ const MiddleBox = () => {
               </div>
               <label className="wallpaper-upload-btn">
                 📁 Upload Photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={handleWallpaperUpload}
-                />
+                <input type="file" accept="image/*" hidden onChange={handleWallpaperUpload} />
               </label>
             </div>
           )}
@@ -470,101 +349,57 @@ const MiddleBox = () => {
               <div className="msg-wrapper">
 
                 {msg.image_url ? (
-                  <div
-                    style={{ position: 'relative', display: 'inline-block' }}
-                    onMouseEnter={() => handleBubbleEnter(msg.id)}
-                    onMouseLeave={handleBubbleLeave}
-                  >
-                    <img
-                      src={msg.image_url}
-                      alt="shared"
-                      className="chat-image"
-                      onClick={() => setPreviewImg(msg.image_url)}
-                    />
+                  <div style={{ position: 'relative', display: 'inline-block' }}
+                    onMouseEnter={() => handleBubbleEnter(msg.id)} onMouseLeave={handleBubbleLeave}>
+                    <img src={msg.image_url} alt="shared" className="chat-image" onClick={() => setPreviewImg(msg.image_url)} />
                     {isHovered && isMe && (
                       <div className="msg-context-menu menu-left"
-                        onMouseEnter={() => clearTimeout(hoverTimer.current)}
-                        onMouseLeave={handleBubbleLeave}
-                      >
+                        onMouseEnter={() => clearTimeout(hoverTimer.current)} onMouseLeave={handleBubbleLeave}>
                         <button onClick={() => deleteMessage(msg.id)}>🗑 Delete</button>
                       </div>
                     )}
                   </div>
 
                 ) : msg.video_url ? (
-                  <div
-                    style={{ position: 'relative', display: 'inline-block' }}
-                    onMouseEnter={() => handleBubbleEnter(msg.id)}
-                    onMouseLeave={handleBubbleLeave}
-                  >
+                  <div style={{ position: 'relative', display: 'inline-block' }}
+                    onMouseEnter={() => handleBubbleEnter(msg.id)} onMouseLeave={handleBubbleLeave}>
                     <div className="chat-video-wrapper" style={{ width: '260px', maxWidth: '260px' }}>
-                      <video
-                        src={msg.video_url}
-                        className="chat-video"
-                        controls
-                        preload="metadata"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <button
-                        className="video-fullscreen-btn"
-                        title="Open fullscreen"
-                        onClick={() => setPreviewVideo(msg.video_url)}
-                      >
-                        ⛶
-                      </button>
+                      <video src={msg.video_url} className="chat-video" controls preload="metadata" onClick={(e) => e.stopPropagation()} />
+                      <button className="video-fullscreen-btn" title="Open fullscreen" onClick={() => setPreviewVideo(msg.video_url)}>⛶</button>
                     </div>
                     {isHovered && isMe && (
                       <div className="msg-context-menu menu-left"
-                        onMouseEnter={() => clearTimeout(hoverTimer.current)}
-                        onMouseLeave={handleBubbleLeave}
-                      >
+                        onMouseEnter={() => clearTimeout(hoverTimer.current)} onMouseLeave={handleBubbleLeave}>
                         <button onClick={() => deleteMessage(msg.id)}>🗑 Delete</button>
                       </div>
                     )}
                   </div>
 
                 ) : (
-                  <div
-                    style={{ position: 'relative', display: 'inline-block' }}
-                    onMouseEnter={() => handleBubbleEnter(msg.id)}
-                    onMouseLeave={handleBubbleLeave}
-                  >
-                    <p
-                      className="msg"
-                      style={{
-                        background: isMe ? wallpaper.bubbleSent : wallpaper.bubbleReceived,
-                        color: isMe ? wallpaper.textSent : wallpaper.textReceived,
-                      }}
-                    >
+                  <div style={{ position: 'relative', display: 'inline-block' }}
+                    onMouseEnter={() => handleBubbleEnter(msg.id)} onMouseLeave={handleBubbleLeave}>
+                    <p className="msg" style={{
+                      background: isMe ? wallpaper.bubbleSent : wallpaper.bubbleReceived,
+                      color: isMe ? wallpaper.textSent : wallpaper.textReceived,
+                    }}>
                       {msg.content}
                     </p>
                     {isHovered && (
-                      <div
-                        className={`msg-context-menu ${isMe ? 'menu-left' : 'menu-right'}`}
-                        onMouseEnter={() => clearTimeout(hoverTimer.current)}
-                        onMouseLeave={handleBubbleLeave}
-                      >
+                      <div className={`msg-context-menu ${isMe ? 'menu-left' : 'menu-right'}`}
+                        onMouseEnter={() => clearTimeout(hoverTimer.current)} onMouseLeave={handleBubbleLeave}>
                         <button onClick={() => copyMessage(msg.content)}>📋 Copy</button>
-                        {isMe && (
-                          <button onClick={() => deleteMessage(msg.id)}>🗑 Delete</button>
-                        )}
+                        {isMe && <button onClick={() => deleteMessage(msg.id)}>🗑 Delete</button>}
                       </div>
                     )}
                   </div>
                 )}
 
                 <div className="msg-info">
-                  <img
-                    src={msg.avatar_url || DEFAULT_AVATAR}
-                    alt=""
-                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR }}
-                  />
+                  <img src={msg.avatar_url || DEFAULT_AVATAR} alt=""
+                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR }} />
                   <p style={{ color: wallpaper.id === 'default' ? 'gray' : 'rgba(255,255,255,0.8)' }}>
                     {new Date(msg.created_at + 'Z').toLocaleTimeString('en-IN', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true,
-                      timeZone: 'Asia/Kolkata'
+                      hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
                     })}
                   </p>
                 </div>
@@ -583,9 +418,7 @@ const MiddleBox = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {showScrollBtn && (
-        <button className="scroll-down-btn" onClick={scrollToBottom}>↓</button>
-      )}
+      {showScrollBtn && <button className="scroll-down-btn" onClick={scrollToBottom}>↓</button>}
 
       <div className="chat-input" style={{ background: wallpaper.inputBar }}>
         {showEmoji && (
@@ -602,10 +435,7 @@ const MiddleBox = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') sendMessage() }}
-          style={{
-            background: 'transparent',
-            color: wallpaper.id === 'default' ? '#333' : wallpaper.textReceived
-          }}
+          style={{ background: 'transparent', color: wallpaper.id === 'default' ? '#333' : wallpaper.textReceived }}
         />
 
         <span className="emoji-btn" onClick={() => setShowEmoji((prev) => !prev)}>😊</span>
@@ -656,12 +486,7 @@ const MiddleBox = () => {
       {previewVideo && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setPreviewVideo(null)}>
           <div className="img-preview-box video-preview-box" onClick={(e) => e.stopPropagation()}>
-            <video
-              src={previewVideo}
-              controls
-              autoPlay
-              style={{ maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px' }}
-            />
+            <video src={previewVideo} controls autoPlay style={{ maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px' }} />
             <button className="img-preview-close" onClick={() => setPreviewVideo(null)}>✕</button>
           </div>
         </div>,
