@@ -1,12 +1,16 @@
-.profile{
+.profile {
     min-height: 100vh;
-    background: url(/background.png)no-repeat;
+    background: url(/background.png) no-repeat;
     background-size: cover;
+    background-position: center;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
 }
-.profile-container{
+
+.profile-container {
     background: white;
     display: flex;
     align-items: center;
@@ -15,51 +19,96 @@
     border-radius: 10px;
 }
 
-.profile-pic{
+.profile-pic {
     max-width: 160px;
     aspect-ratio: 1/1;
     margin: 20px auto;
     border-radius: 50%;
 }
 
-.profile form{
+.profile form {
     display: flex;
     flex-direction: column;
     gap: 20px;
     padding: 40px;
 }
 
-.profile form h3{
+.profile form h3 {
     font-weight: 500;
 }
 
-.profile label{
+.profile label {
     display: flex;
     align-items: center;
     gap: 10px;
-    color:gray;
+    color: gray;
     cursor: pointer;
 }
 
-.profile label img{
+.profile label img {
     width: 80px;
     aspect-ratio: 1/1;
     border-radius: 50%;
 }
 
-.profile input,textarea{
+.profile input, textarea {
     padding: 10px;
     min-width: 300px;
     border: 1px solid #c9c9c9;
     outline-color: #077eff;
 }
 
-.profile form button{
+.profile form button {
     border: none;
     color: white;
     background-color: #077eff;
     padding: 8px;
     font-size: 16px;
     cursor: pointer;
+}
 
+@media (max-width: 768px) {
+    .profile {
+        padding: 20px;
+        align-items: flex-start;
+        padding-top: 40px;
+    }
+
+    .profile-container {
+        flex-direction: column;
+        min-width: unset;
+        width: 100%;
+        max-width: 420px;
+        margin: auto;
+    }
+
+    .profile-pic {
+        max-width: 120px;
+        margin: 16px auto 0;
+        display: block;
+    }
+
+    .profile form {
+        padding: 20px;
+        width: 100%;
+        box-sizing: border-box;
+        gap: 14px;
+    }
+
+    .profile input,
+    textarea {
+        min-width: unset;
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 16px;
+    }
+
+    .profile label img {
+        width: 60px;
+    }
+
+    .profile form button {
+        font-size: 15px;
+        padding: 12px;
+    }
 }
