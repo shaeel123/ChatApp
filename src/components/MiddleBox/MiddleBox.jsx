@@ -142,52 +142,69 @@ const MiddleBox = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
- const sendImage = async (file) => {
-  if (!file || !chatUser) {
-    alert('EARLY EXIT - file:' + !!file + ' chatUser:' + !!chatUser)
-    return
-  }
-  const cu = await getCurrentUser()
-  if (!cu) {
-    alert('NO USER FOUND')
-    return
-  }
-  alert('USER OK: ' + cu.id)
-
-  const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
-  const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
-  if (uploadError) {
-    alert('UPLOAD ERROR: ' + uploadError.message)
-    return
-  }
-  alert('UPLOAD OK')
-
-  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-
-  const { data: insertedArr, error } = await supabase
-    .from('messages')
-    .insert([{
-      content: '',
-      image_url: urlData.publicUrl,
+  const sendMessage = async () => {
+    if (!input.trim() || !chatUser) return
+    const cu = await getCurrentUser()
+    if (!cu) return
+    const { error } = await supabase.from('messages').insert([{
+      content: input,
       user_id: cu.id,
       receiver_id: chatUser.id,
       username: cu.email,
       avatar_url: userData?.avatar_url
     }])
-    .select()
-
-  alert('AFTER INSERT - error: ' + JSON.stringify(error) + ' data: ' + JSON.stringify(insertedArr))
-
-  if (error) return
-
-  const inserted = insertedArr?.[0]
-  if (inserted) {
-    setMessages((prev) => {
-      if (prev.find(m => m.id === inserted.id)) return prev
-      return [...prev, inserted]
-    })
+    if (error) { console.error(error); return }
+    setInput('')
+    setShowEmoji(false)
   }
-}
+
+  const sendImage = async (file) => {
+    if (!file || !chatUser) {
+      alert('EARLY EXIT - file:' + !!file + ' chatUser:' + !!chatUser)
+      return
+    }
+    const cu = await getCurrentUser()
+    if (!cu) {
+      alert('NO USER FOUND')
+      return
+    }
+    alert('USER OK: ' + cu.id)
+
+    const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
+    if (uploadError) {
+      alert('UPLOAD ERROR: ' + uploadError.message)
+      return
+    }
+    alert('UPLOAD OK')
+
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+
+    const { data: insertedArr, error } = await supabase
+      .from('messages')
+      .insert([{
+        content: '',
+        image_url: urlData.publicUrl,
+        user_id: cu.id,
+        receiver_id: chatUser.id,
+        username: cu.email,
+        avatar_url: userData?.avatar_url
+      }])
+      .select()
+
+    alert('AFTER INSERT - error: ' + JSON.stringify(error) + ' data: ' + JSON.stringify(insertedArr))
+
+    if (error) return
+
+    const inserted = insertedArr?.[0]
+    if (inserted) {
+      setMessages((prev) => {
+        if (prev.find(m => m.id === inserted.id)) return prev
+        return [...prev, inserted]
+      })
+    }
+  }
+
   const sendVideo = async (file) => {
     if (!file || !chatUser) return
     if (file.size > 50 * 1024 * 1024) {
@@ -209,7 +226,7 @@ const MiddleBox = () => {
 
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
 
-    const { data: inserted, error } = await supabase
+    const { data: insertedArr, error } = await supabase
       .from('messages')
       .insert([{
         content: '',
@@ -220,14 +237,16 @@ const MiddleBox = () => {
         avatar_url: userData?.avatar_url
       }])
       .select()
-      .single()
 
     if (error) { console.error('Send video error:', error) }
     else {
-      setMessages((prev) => {
-        if (prev.find(m => m.id === inserted.id)) return prev
-        return [...prev, inserted]
-      })
+      const inserted = insertedArr?.[0]
+      if (inserted) {
+        setMessages((prev) => {
+          if (prev.find(m => m.id === inserted.id)) return prev
+          return [...prev, inserted]
+        })
+      }
     }
     setUploadingVideo(false)
   }
