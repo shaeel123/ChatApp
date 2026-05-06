@@ -568,7 +568,6 @@ const MiddleBox = () => {
   type="file"
   id="image"
   accept="image/*"
-  capture="environment"  // ✅ opens camera/gallery on mobile
   hidden
   onChange={async (e) => {
     const file = e.target.files[0]
