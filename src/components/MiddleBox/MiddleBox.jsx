@@ -111,6 +111,13 @@ const DEFAULT_WALLPAPERS = [
   },
 ]
 
+// ✅ Helper: always get a valid user (state OR fresh auth call)
+const getValidUser = async (stateUser) => {
+  if (stateUser) return stateUser
+  const { data } = await supabase.auth.getUser()
+  return data?.user || null
+}
+
 const MiddleBox = () => {
   const { userData, chatUser, setChatUser } = useAppContext()
   const [messages, setMessages] = useState([])
@@ -216,12 +223,15 @@ const MiddleBox = () => {
   }
 
   const sendMessage = async () => {
-    if (!input.trim() || !user || !chatUser) return
+    if (!input.trim() || !chatUser) return
+    // ✅ Always resolve user fresh in case state is stale
+    const currentUser = await getValidUser(user)
+    if (!currentUser) return
     const { error } = await supabase.from('messages').insert([{
       content: input,
-      user_id: user.id,
+      user_id: currentUser.id,
       receiver_id: chatUser.id,
-      username: user.email,
+      username: currentUser.email,
       avatar_url: userData?.avatar_url
     }])
     if (error) { console.error(error); return }
@@ -230,52 +240,90 @@ const MiddleBox = () => {
   }
 
   const sendImage = async (file) => {
-    if (!file || !user || !chatUser) return
-    const filePath = `${user.id}/messages/${Date.now()}_${file.name}`
+    if (!file || !chatUser) return
+
+    // ✅ Always resolve user fresh — fixes mobile where state may be null
+    const currentUser = await getValidUser(user)
+    if (!currentUser) {
+      alert('Not logged in. Please refresh and try again.')
+      return
+    }
+
+    const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
+
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(filePath, file)
-    if (uploadError) { console.error("Image upload error:", uploadError); return }
+
+    if (uploadError) {
+      console.error('Image upload error:', uploadError)
+      alert('Upload failed: ' + uploadError.message)
+      return
+    }
+
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+
     const { error } = await supabase.from('messages').insert([{
       content: '',
       image_url: urlData.publicUrl,
-      user_id: user.id,
+      user_id: currentUser.id,
       receiver_id: chatUser.id,
-      username: user.email,
+      username: currentUser.email,
       avatar_url: userData?.avatar_url
     }])
-    if (error) console.error("Send image error:", error)
+
+    if (error) {
+      console.error('Send image error:', error)
+      alert('Message failed: ' + error.message)
+    }
   }
 
-  // ✅ NEW: Send video
   const sendVideo = async (file) => {
-    if (!file || !user || !chatUser) return
-    // 50MB limit
+    if (!file || !chatUser) return
+
     if (file.size > 50 * 1024 * 1024) {
       alert('Video is too large. Please upload a video under 50MB.')
       return
     }
+
+    // ✅ Always resolve user fresh — fixes mobile where state may be null
+    const currentUser = await getValidUser(user)
+    if (!currentUser) {
+      alert('Not logged in. Please refresh and try again.')
+      return
+    }
+
     setUploadingVideo(true)
-    const filePath = `${user.id}/messages/${Date.now()}_${file.name}`
+
+    const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
+
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(filePath, file, { contentType: file.type })
+
     if (uploadError) {
-      console.error("Video upload error:", uploadError)
+      console.error('Video upload error:', uploadError)
+      alert('Upload failed: ' + uploadError.message)
       setUploadingVideo(false)
       return
     }
+
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+
     const { error } = await supabase.from('messages').insert([{
       content: '',
       video_url: urlData.publicUrl,
-      user_id: user.id,
+      user_id: currentUser.id,
       receiver_id: chatUser.id,
-      username: user.email,
+      username: currentUser.email,
       avatar_url: userData?.avatar_url
     }])
-    if (error) console.error("Send video error:", error)
+
+    if (error) {
+      console.error('Send video error:', error)
+      alert('Message failed: ' + error.message)
+    }
+
     setUploadingVideo(false)
   }
 
@@ -444,28 +492,27 @@ const MiddleBox = () => {
                   </div>
 
                 ) : msg.video_url ? (
-                  // ✅ NEW: Video bubble
                   <div
                     style={{ position: 'relative', display: 'inline-block' }}
                     onMouseEnter={() => handleBubbleEnter(msg.id)}
                     onMouseLeave={handleBubbleLeave}
                   >
                     <div className="chat-video-wrapper" style={{ width: '260px', maxWidth: '260px' }}>
-  <video
-    src={msg.video_url}
-    className="chat-video"
-    controls
-    preload="metadata"
-    onClick={(e) => e.stopPropagation()}
-  />
-  <button
-    className="video-fullscreen-btn"
-    title="Open fullscreen"
-    onClick={() => setPreviewVideo(msg.video_url)}
-  >
-    ⛶
-  </button>
-</div>
+                      <video
+                        src={msg.video_url}
+                        className="chat-video"
+                        controls
+                        preload="metadata"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <button
+                        className="video-fullscreen-btn"
+                        title="Open fullscreen"
+                        onClick={() => setPreviewVideo(msg.video_url)}
+                      >
+                        ⛶
+                      </button>
+                    </div>
                     {isHovered && isMe && (
                       <div className="msg-context-menu menu-left"
                         onMouseEnter={() => clearTimeout(hoverTimer.current)}
@@ -527,7 +574,6 @@ const MiddleBox = () => {
           )
         })}
 
-        {/* ✅ Video uploading indicator */}
         {uploadingVideo && (
           <div style={{ textAlign: 'center', padding: '8px', fontSize: '13px', color: 'gray' }}>
             📤 Uploading video...
@@ -564,22 +610,21 @@ const MiddleBox = () => {
 
         <span className="emoji-btn" onClick={() => setShowEmoji((prev) => !prev)}>😊</span>
 
-     <input
-  type="file"
-  id="image"
-  accept="image/*"
-  hidden
-  onChange={async (e) => {
-    const file = e.target.files[0]
-    if (file) await sendImage(file)
-    e.target.value = ''
-  }}
-/>
+        <input
+          type="file"
+          id="image"
+          accept="image/*"
+          hidden
+          onChange={async (e) => {
+            const file = e.target.files[0]
+            if (file) await sendImage(file)
+            e.target.value = ''
+          }}
+        />
         <label htmlFor="image">
           <img src={assets.gallery_icon} alt="" className="gallery-btn" />
         </label>
 
-        {/* ✅ NEW: Video upload button */}
         <input
           type="file"
           id="video-upload"
@@ -598,7 +643,6 @@ const MiddleBox = () => {
         <img src={assets.send_button} alt="" onClick={sendMessage} />
       </div>
 
-      {/* Image preview portal */}
       {previewImg && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setPreviewImg(null)}>
           <div className="img-preview-box" onClick={(e) => e.stopPropagation()}>
@@ -609,7 +653,6 @@ const MiddleBox = () => {
         document.body
       )}
 
-      {/* ✅ NEW: Video preview portal (fullscreen) */}
       {previewVideo && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setPreviewVideo(null)}>
           <div className="img-preview-box video-preview-box" onClick={(e) => e.stopPropagation()}>
