@@ -21,12 +21,6 @@ const DEFAULT_WALLPAPERS = [
   { id: 'space', label: 'Space', bg: 'linear-gradient(180deg, #000000, #434343)', bubbleSent: '#434343', bubbleReceived: 'rgba(255,255,255,0.12)', inputBar: '#111', textSent: 'white', textReceived: 'white' },
 ]
 
-const getValidUser = async (stateUser) => {
-  if (stateUser) return stateUser
-  const { data } = await supabase.auth.getUser()
-  return data?.user || null
-}
-
 const MiddleBox = () => {
   const { userData, chatUser, setChatUser } = useAppContext()
   const [messages, setMessages] = useState([])
@@ -46,7 +40,6 @@ const MiddleBox = () => {
   const messagesEndRef = useRef(null)
   const chatMsgRef = useRef(null)
   const hoverTimer = useRef(null)
-  // ✅ keep refs to current user and chatUser for use inside callbacks
   const userRef = useRef(null)
   const chatUserRef = useRef(null)
 
@@ -82,6 +75,18 @@ const MiddleBox = () => {
     if (!error) setMessages(data)
   }
 
+  // ✅ Always get a valid user — from ref, state, or fresh auth call
+  const getCurrentUser = async () => {
+    if (userRef.current) return userRef.current
+    const { data } = await supabase.auth.getUser()
+    if (data?.user) {
+      setUser(data.user)
+      userRef.current = data.user
+      setCurrentUserId(data.user.id)
+    }
+    return data?.user || null
+  }
+
   useEffect(() => {
     let channel
     const setup = async () => {
@@ -89,6 +94,7 @@ const MiddleBox = () => {
       if (!data.user) return
       setUser(data.user)
       setCurrentUserId(data.user.id)
+      userRef.current = data.user
       if (!chatUser) return
       await fetchMessages(data.user.id, chatUser.id)
       await supabase
@@ -139,13 +145,13 @@ const MiddleBox = () => {
 
   const sendMessage = async () => {
     if (!input.trim() || !chatUser) return
-    const currentUser = await getValidUser(user)
-    if (!currentUser) return
+    const cu = await getCurrentUser()
+    if (!cu) return
     const { error } = await supabase.from('messages').insert([{
       content: input,
-      user_id: currentUser.id,
+      user_id: cu.id,
       receiver_id: chatUser.id,
-      username: currentUser.email,
+      username: cu.email,
       avatar_url: userData?.avatar_url
     }])
     if (error) { console.error(error); return }
@@ -155,26 +161,35 @@ const MiddleBox = () => {
 
   const sendImage = async (file) => {
     if (!file || !chatUser) return
-    const currentUser = await getValidUser(user)
-    if (!currentUser) return
+    const cu = await getCurrentUser()
+    if (!cu) return
 
-    const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
+    const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
     const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
     if (uploadError) { console.error('Image upload error:', uploadError); return }
 
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-    const { error } = await supabase.from('messages').insert([{
-      content: '',
-      image_url: urlData.publicUrl,
-      user_id: currentUser.id,
-      receiver_id: chatUser.id,
-      username: currentUser.email,
-      avatar_url: userData?.avatar_url
-    }])
+
+    const { data: inserted, error } = await supabase
+      .from('messages')
+      .insert([{
+        content: '',
+        image_url: urlData.publicUrl,
+        user_id: cu.id,
+        receiver_id: chatUser.id,
+        username: cu.email,
+        avatar_url: userData?.avatar_url
+      }])
+      .select()
+      .single()
+
     if (error) { console.error('Send image error:', error); return }
 
-    // ✅ Fallback: manually refresh messages in case realtime misses it
-    await fetchMessages(currentUser.id, chatUser.id)
+    // ✅ Immediately append to state — no waiting for realtime
+    setMessages((prev) => {
+      if (prev.find(m => m.id === inserted.id)) return prev
+      return [...prev, inserted]
+    })
   }
 
   const sendVideo = async (file) => {
@@ -183,11 +198,11 @@ const MiddleBox = () => {
       alert('Video is too large. Please upload a video under 50MB.')
       return
     }
-    const currentUser = await getValidUser(user)
-    if (!currentUser) return
+    const cu = await getCurrentUser()
+    if (!cu) return
 
     setUploadingVideo(true)
-    const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
+    const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
     const { error: uploadError } = await supabase.storage
       .from('avatars').upload(filePath, file, { contentType: file.type })
     if (uploadError) {
@@ -197,18 +212,28 @@ const MiddleBox = () => {
     }
 
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-    const { error } = await supabase.from('messages').insert([{
-      content: '',
-      video_url: urlData.publicUrl,
-      user_id: currentUser.id,
-      receiver_id: chatUser.id,
-      username: currentUser.email,
-      avatar_url: userData?.avatar_url
-    }])
-    if (error) console.error('Send video error:', error)
 
-    // ✅ Fallback: manually refresh messages in case realtime misses it
-    await fetchMessages(currentUser.id, chatUser.id)
+    const { data: inserted, error } = await supabase
+      .from('messages')
+      .insert([{
+        content: '',
+        video_url: urlData.publicUrl,
+        user_id: cu.id,
+        receiver_id: chatUser.id,
+        username: cu.email,
+        avatar_url: userData?.avatar_url
+      }])
+      .select()
+      .single()
+
+    if (error) { console.error('Send video error:', error); }
+    else {
+      // ✅ Immediately append to state — no waiting for realtime
+      setMessages((prev) => {
+        if (prev.find(m => m.id === inserted.id)) return prev
+        return [...prev, inserted]
+      })
+    }
     setUploadingVideo(false)
   }
 
@@ -339,7 +364,7 @@ const MiddleBox = () => {
                 ) : msg.video_url ? (
                   <div style={{ position: 'relative', display: 'inline-block' }}
                     onMouseEnter={() => handleBubbleEnter(msg.id)} onMouseLeave={handleBubbleLeave}>
-                    <div className="chat-video-wrapper" style={{ width: '260px', maxWidth: '260px' }}>
+                    <div className="chat-video-wrapper">
                       <video src={msg.video_url} className="chat-video" controls preload="metadata" onClick={(e) => e.stopPropagation()} />
                       <button className="video-fullscreen-btn" title="Open fullscreen" onClick={() => setPreviewVideo(msg.video_url)}>⛶</button>
                     </div>
