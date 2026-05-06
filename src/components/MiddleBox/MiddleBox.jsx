@@ -21,7 +21,6 @@ const DEFAULT_WALLPAPERS = [
   { id: 'space', label: 'Space', bg: 'linear-gradient(180deg, #000000, #434343)', bubbleSent: '#434343', bubbleReceived: 'rgba(255,255,255,0.12)', inputBar: '#111', textSent: 'white', textReceived: 'white' },
 ]
 
-// ✅ Helper: always get a valid user (state OR fresh auth call)
 const getValidUser = async (stateUser) => {
   if (stateUser) return stateUser
   const { data } = await supabase.auth.getUser()
@@ -47,6 +46,12 @@ const MiddleBox = () => {
   const messagesEndRef = useRef(null)
   const chatMsgRef = useRef(null)
   const hoverTimer = useRef(null)
+  // ✅ keep refs to current user and chatUser for use inside callbacks
+  const userRef = useRef(null)
+  const chatUserRef = useRef(null)
+
+  useEffect(() => { userRef.current = user }, [user])
+  useEffect(() => { chatUserRef.current = chatUser }, [chatUser])
 
   useEffect(() => {
     if (!chatUser) return
@@ -97,9 +102,12 @@ const MiddleBox = () => {
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
           (payload) => {
             const msg = payload.new
+            const cu = userRef.current
+            const chat = chatUserRef.current
+            if (!cu || !chat) return
             if (
-              (msg.user_id === data.user.id && msg.receiver_id === chatUser.id) ||
-              (msg.user_id === chatUser.id && msg.receiver_id === data.user.id)
+              (msg.user_id === cu.id && msg.receiver_id === chat.id) ||
+              (msg.user_id === chat.id && msg.receiver_id === cu.id)
             ) {
               setMessages((prev) => {
                 if (prev.find(m => m.id === msg.id)) return prev
@@ -147,33 +155,14 @@ const MiddleBox = () => {
 
   const sendImage = async (file) => {
     if (!file || !chatUser) return
-
     const currentUser = await getValidUser(user)
-    if (!currentUser) {
-      alert('Not logged in. Please refresh and try again.')
-      return
-    }
-
-    alert(`Starting upload - user: ${currentUser.id}`)
-
-    // ✅ Debug: show file info to catch HEIC or bad mime types
-    alert(`File name: ${file.name}, type: "${file.type}", size: ${file.size}`)
+    if (!currentUser) return
 
     const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file)
-
-    if (uploadError) {
-      alert('UPLOAD FAILED: ' + uploadError.message)
-      return
-    }
-
-    alert('Upload success! Now inserting message...')
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
+    if (uploadError) { console.error('Image upload error:', uploadError); return }
 
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-
     const { error } = await supabase.from('messages').insert([{
       content: '',
       image_url: urlData.publicUrl,
@@ -182,43 +171,32 @@ const MiddleBox = () => {
       username: currentUser.email,
       avatar_url: userData?.avatar_url
     }])
+    if (error) { console.error('Send image error:', error); return }
 
-    if (error) {
-      alert('INSERT FAILED: ' + error.message)
-    }
+    // ✅ Fallback: manually refresh messages in case realtime misses it
+    await fetchMessages(currentUser.id, chatUser.id)
   }
 
   const sendVideo = async (file) => {
     if (!file || !chatUser) return
-
     if (file.size > 50 * 1024 * 1024) {
       alert('Video is too large. Please upload a video under 50MB.')
       return
     }
-
     const currentUser = await getValidUser(user)
-    if (!currentUser) {
-      alert('Not logged in. Please refresh and try again.')
-      return
-    }
+    if (!currentUser) return
 
     setUploadingVideo(true)
-
     const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
-
     const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { contentType: file.type })
-
+      .from('avatars').upload(filePath, file, { contentType: file.type })
     if (uploadError) {
       console.error('Video upload error:', uploadError)
-      alert('Upload failed: ' + uploadError.message)
       setUploadingVideo(false)
       return
     }
 
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-
     const { error } = await supabase.from('messages').insert([{
       content: '',
       video_url: urlData.publicUrl,
@@ -227,12 +205,10 @@ const MiddleBox = () => {
       username: currentUser.email,
       avatar_url: userData?.avatar_url
     }])
+    if (error) console.error('Send video error:', error)
 
-    if (error) {
-      console.error('Send video error:', error)
-      alert('Message failed: ' + error.message)
-    }
-
+    // ✅ Fallback: manually refresh messages in case realtime misses it
+    await fetchMessages(currentUser.id, chatUser.id)
     setUploadingVideo(false)
   }
 
