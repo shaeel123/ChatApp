@@ -249,6 +249,8 @@ const MiddleBox = () => {
       return
     }
 
+    alert(`Starting upload - user: ${currentUser.id}`)
+
     const filePath = `${currentUser.id}/messages/${Date.now()}_${file.name}`
 
     const { error: uploadError } = await supabase.storage
