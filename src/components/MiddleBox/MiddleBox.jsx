@@ -564,18 +564,18 @@ const MiddleBox = () => {
 
         <span className="emoji-btn" onClick={() => setShowEmoji((prev) => !prev)}>😊</span>
 
-        {/* Image upload */}
-        <input
-          type="file"
-          id="image"
-          accept="image/*"
-          hidden
-          onChange={async (e) => {
-            const file = e.target.files[0]
-            if (file) await sendImage(file)
-            e.target.value = ''
-          }}
-        />
+     <input
+  type="file"
+  id="image"
+  accept="image/*"
+  capture="environment"  // ✅ opens camera/gallery on mobile
+  hidden
+  onChange={async (e) => {
+    const file = e.target.files[0]
+    if (file) await sendImage(file)
+    e.target.value = ''
+  }}
+/>
         <label htmlFor="image">
           <img src={assets.gallery_icon} alt="" className="gallery-btn" />
         </label>
