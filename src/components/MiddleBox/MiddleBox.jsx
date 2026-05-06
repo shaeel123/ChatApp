@@ -157,57 +157,52 @@ const MiddleBox = () => {
     setInput('')
     setShowEmoji(false)
   }
-
-  const sendImage = async (file) => {
-    if (!file || !chatUser) {
-      console.log('EARLY EXIT - file:', !!file, 'chatUser:', !!chatUser)
-      return
-    }
-    const cu = await getCurrentUser()
-    if (!cu) {
-      console.log('NO USER FOUND')
-      return
-    }
-    console.log('USER OK:', cu.id)
-    console.log('FILE:', file.name, file.size, file.type)
-
-    const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
-    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
-    if (uploadError) {
-      console.log('UPLOAD ERROR:', uploadError.message)
-      return
-    }
-    console.log('UPLOAD OK')
-
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-    console.log('URL:', urlData.publicUrl)
-
-    const { data: inserted, error } = await supabase
-      .from('messages')
-      .insert([{
-        content: '',
-        image_url: urlData.publicUrl,
-        user_id: cu.id,
-        receiver_id: chatUser.id,
-        username: cu.email,
-        avatar_url: userData?.avatar_url
-      }])
-      .select()
-      .single()
-
-    if (error) {
-      console.log('INSERT ERROR:', error.message)
-      return
-    }
-    console.log('INSERT OK:', inserted.id)
-
-    setMessages((prev) => {
-      if (prev.find(m => m.id === inserted.id)) return prev
-      return [...prev, inserted]
-    })
-    console.log('STATE UPDATED')
+const sendImage = async (file) => {
+  if (!file || !chatUser) {
+    alert('EARLY EXIT - file:' + !!file + ' chatUser:' + !!chatUser)
+    return
   }
+  const cu = await getCurrentUser()
+  if (!cu) {
+    alert('NO USER FOUND')
+    return
+  }
+  alert('USER OK: ' + cu.id)
 
+  const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
+  const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
+  if (uploadError) {
+    alert('UPLOAD ERROR: ' + uploadError.message)
+    return
+  }
+  alert('UPLOAD OK')
+
+  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+
+  const { data: inserted, error } = await supabase
+    .from('messages')
+    .insert([{
+      content: '',
+      image_url: urlData.publicUrl,
+      user_id: cu.id,
+      receiver_id: chatUser.id,
+      username: cu.email,
+      avatar_url: userData?.avatar_url
+    }])
+    .select()
+    .single()
+
+  if (error) {
+    alert('INSERT ERROR: ' + error.message)
+    return
+  }
+  alert('INSERT OK: ' + inserted.id)
+
+  setMessages((prev) => {
+    if (prev.find(m => m.id === inserted.id)) return prev
+    return [...prev, inserted]
+  })
+}
   const sendVideo = async (file) => {
     if (!file || !chatUser) return
     if (file.size > 50 * 1024 * 1024) {
