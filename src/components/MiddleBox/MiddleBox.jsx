@@ -67,6 +67,16 @@ const MiddleBox = () => {
     }
   }, [chatUser])
 
+    useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        setUser(data.user)
+        setCurrentUserId(data.user.id)
+        userRef.current = data.user
+      }
+    })
+  }, [])
+
   const onEmojiClick = (emojiData) => {
     setInput((prev) => prev + emojiData.emoji)
   }
