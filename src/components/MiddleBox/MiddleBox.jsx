@@ -173,56 +173,67 @@ const MiddleBox = () => {
   }
 
   // ✅ Actually upload — called from a button press (safe on iOS)
-  const sendStagedFile = async () => {
-    if (!stagedFile || !chatUser) return
-    const cu = await getCurrentUser()
-    if (!cu) return
+ const sendStagedFile = async () => {
+  if (!stagedFile || !chatUser) return
+  const cu = await getCurrentUser()
+  if (!cu) return
 
-    setUploading(true)
-    const { file, type } = stagedFile
-    const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
+  setUploading(true)
+  const { file, type } = stagedFile
+  const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { contentType: file.type })
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file, { contentType: file.type })
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      setUploading(false)
-      return
-    }
-
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-
-    const msgPayload = {
-      content: '',
-      user_id: cu.id,
-      receiver_id: chatUser.id,
-      username: cu.email,
-      avatar_url: userData?.avatar_url || null,
-      ...(type === 'image' ? { image_url: urlData.publicUrl } : { video_url: urlData.publicUrl })
-    }
-
-    const { data: insertedArr, error } = await supabase
-      .from('messages')
-      .insert([msgPayload])
-      .select()
-
-    if (error) {
-      console.error('Insert error:', error)
-    } else {
-      const inserted = insertedArr?.[0]
-      if (inserted) {
-        setMessages((prev) => {
-          if (prev.find(m => m.id === inserted.id)) return prev
-          return [...prev, inserted]
-        })
-      }
-    }
-
-    setStagedFile(null)
+  if (uploadError) {
+    console.error('Upload error:', uploadError)
     setUploading(false)
+    return
   }
+
+  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+
+  // ✅ Use native fetch instead of Supabase client — works on iOS/Android
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData?.session?.access_token
+
+  const msgPayload = {
+    content: '',
+    user_id: cu.id,
+    receiver_id: chatUser.id,
+    username: cu.email,
+    avatar_url: userData?.avatar_url || null,
+    ...(type === 'image' ? { image_url: urlData.publicUrl } : { video_url: urlData.publicUrl })
+  }
+
+  try {
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(msgPayload)
+    })
+
+    const result = await res.json()
+
+    if (Array.isArray(result) && result[0]) {
+      setMessages((prev) => {
+        if (prev.find(m => m.id === result[0].id)) return prev
+        return [...prev, result[0]]
+      })
+    }
+  } catch (err) {
+    console.error('Insert error:', err)
+  }
+
+  setStagedFile(null)
+  setUploading(false)
+}
 
   const deleteMessage = async (msgId) => {
     const { error } = await supabase.from('messages').delete().eq('id', msgId)
