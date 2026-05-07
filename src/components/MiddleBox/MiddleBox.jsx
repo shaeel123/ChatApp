@@ -40,6 +40,7 @@ const MiddleBox = () => {
   const [hoveredMsgId, setHoveredMsgId] = useState(null)
   const [stagedFile, setStagedFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [fileInputKey, setFileInputKey] = useState(0) // ✅ forces file input reset
 
   const messagesEndRef = useRef(null)
   const chatMsgRef = useRef(null)
@@ -67,7 +68,8 @@ const MiddleBox = () => {
     }
   }, [chatUser])
 
-    useEffect(() => {
+  // ✅ Set user + cache token on mount
+  useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
         setUser(data.user)
@@ -75,12 +77,10 @@ const MiddleBox = () => {
         userRef.current = data.user
       }
     })
-  
-  // ✅ Cache token on mount so delete works immediately
-  supabase.auth.getSession().then(({ data }) => {
-    tokenRef.current = data?.session?.access_token || null
-  })
-}, [])
+    supabase.auth.getSession().then(({ data }) => {
+      tokenRef.current = data?.session?.access_token || null
+    })
+  }, [])
 
   const onEmojiClick = (emojiData) => {
     setInput((prev) => prev + emojiData.emoji)
@@ -178,14 +178,25 @@ const MiddleBox = () => {
     setShowEmoji(false)
   }
 
+  // ✅ Revoke old URL before creating new one, reset file input key
+  const clearStagedFile = (sf) => {
+    if (sf?.previewUrl) URL.revokeObjectURL(sf.previewUrl)
+    setStagedFile(null)
+    setFileInputKey(k => k + 1)
+  }
+
   const handleFileSelect = async (file, type) => {
     if (!file) return
     if (type === 'video' && file.size > 50 * 1024 * 1024) {
       alert('Video is too large. Please upload a video under 50MB.')
       return
     }
+    // Revoke previous preview URL if any
+    if (stagedFile?.previewUrl) URL.revokeObjectURL(stagedFile.previewUrl)
+
     const { data: sessionData } = await supabase.auth.getSession()
     tokenRef.current = sessionData?.session?.access_token || null
+
     const previewUrl = URL.createObjectURL(file)
     setStagedFile({ file, type, previewUrl })
   }
@@ -196,7 +207,7 @@ const MiddleBox = () => {
     if (!cu) return
 
     setUploading(true)
-    const { file, type } = stagedFile
+    const { file, type, previewUrl } = stagedFile
 
     const token = tokenRef.current
     if (!token) { setUploading(false); return }
@@ -257,24 +268,27 @@ const MiddleBox = () => {
       console.error('Insert error:', err)
     }
 
+    // ✅ Revoke URL and reset input after send
+    URL.revokeObjectURL(previewUrl)
     setStagedFile(null)
+    setFileInputKey(k => k + 1)
     setUploading(false)
   }
 
- const deleteMessage = async (msgId) => {
-  const token = tokenRef.current
-  if (!token) return
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/messages?id=eq.${msgId}`, {
-    method: 'DELETE',
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${token}`,
-    }
-  })
-  if (!res.ok) { console.error('Delete failed:', await res.text()); return }
-  setMessages((prev) => prev.filter(m => m.id !== msgId))
-  setHoveredMsgId(null)
-}
+  const deleteMessage = async (msgId) => {
+    const token = tokenRef.current
+    if (!token) return
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/messages?id=eq.${msgId}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+      }
+    })
+    if (!res.ok) { console.error('Delete failed:', await res.text()); return }
+    setMessages((prev) => prev.filter(m => m.id !== msgId))
+    setHoveredMsgId(null)
+  }
 
   const copyMessage = (text) => {
     navigator.clipboard.writeText(text)
@@ -469,8 +483,9 @@ const MiddleBox = () => {
           >
             {uploading ? '⏳' : '📤 Send'}
           </button>
+          {/* ✅ Revoke URL on cancel */}
           <button
-            onClick={() => setStagedFile(null)}
+            onClick={() => clearStagedFile(stagedFile)}
             disabled={uploading}
             style={{
               background: '#eee', border: 'none', borderRadius: 8,
@@ -502,14 +517,15 @@ const MiddleBox = () => {
 
         <span className="emoji-btn" onClick={() => setShowEmoji((prev) => !prev)}>😊</span>
 
+        {/* ✅ fileInputKey forces fresh input after every send/cancel */}
         <input
+          key={`img-${fileInputKey}`}
           type="file"
           id="image"
           accept="image/*"
           hidden
           onChange={(e) => {
             handleFileSelect(e.target.files[0], 'image')
-            e.target.value = ''
           }}
         />
         <label htmlFor="image">
@@ -517,13 +533,13 @@ const MiddleBox = () => {
         </label>
 
         <input
+          key={`vid-${fileInputKey}`}
           type="file"
           id="video-upload"
           accept="video/*"
           hidden
           onChange={(e) => {
             handleFileSelect(e.target.files[0], 'video')
-            e.target.value = ''
           }}
         />
         <label htmlFor="video-upload" title="Send video" style={{ cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>
