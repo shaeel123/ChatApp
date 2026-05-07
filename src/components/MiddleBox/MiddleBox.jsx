@@ -40,7 +40,6 @@ const MiddleBox = () => {
   const [hoveredMsgId, setHoveredMsgId] = useState(null)
   const [stagedFile, setStagedFile] = useState(null)
   const [uploading, setUploading] = useState(false)
-  const [fileInputKey, setFileInputKey] = useState(0) // ✅ forces file input reset
 
   const messagesEndRef = useRef(null)
   const chatMsgRef = useRef(null)
@@ -48,6 +47,8 @@ const MiddleBox = () => {
   const userRef = useRef(null)
   const chatUserRef = useRef(null)
   const tokenRef = useRef(null)
+  const imageInputRef = useRef(null)
+  const videoInputRef = useRef(null)
 
   useEffect(() => { userRef.current = user }, [user])
   useEffect(() => { chatUserRef.current = chatUser }, [chatUser])
@@ -68,7 +69,6 @@ const MiddleBox = () => {
     }
   }, [chatUser])
 
-  // ✅ Set user + cache token on mount
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
@@ -162,6 +162,12 @@ const MiddleBox = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  // ✅ Reset file inputs via refs — no re-mounting, no broken labels
+  const resetFileInputs = () => {
+    if (imageInputRef.current) imageInputRef.current.value = ''
+    if (videoInputRef.current) videoInputRef.current.value = ''
+  }
+
   const sendMessage = async () => {
     if (!input.trim() || !chatUser) return
     const cu = await getCurrentUser()
@@ -178,20 +184,13 @@ const MiddleBox = () => {
     setShowEmoji(false)
   }
 
-  // ✅ Revoke old URL before creating new one, reset file input key
-  const clearStagedFile = (sf) => {
-    if (sf?.previewUrl) URL.revokeObjectURL(sf.previewUrl)
-    setStagedFile(null)
-    setFileInputKey(k => k + 1)
-  }
-
   const handleFileSelect = async (file, type) => {
     if (!file) return
     if (type === 'video' && file.size > 50 * 1024 * 1024) {
       alert('Video is too large. Please upload a video under 50MB.')
       return
     }
-    // Revoke previous preview URL if any
+    // ✅ Revoke previous preview URL before creating a new one
     if (stagedFile?.previewUrl) URL.revokeObjectURL(stagedFile.previewUrl)
 
     const { data: sessionData } = await supabase.auth.getSession()
@@ -268,11 +267,17 @@ const MiddleBox = () => {
       console.error('Insert error:', err)
     }
 
-    // ✅ Revoke URL and reset input after send
+    // ✅ Cleanup: revoke URL, clear state, reset inputs
     URL.revokeObjectURL(previewUrl)
     setStagedFile(null)
-    setFileInputKey(k => k + 1)
+    resetFileInputs()
     setUploading(false)
+  }
+
+  const cancelStagedFile = () => {
+    if (stagedFile?.previewUrl) URL.revokeObjectURL(stagedFile.previewUrl)
+    setStagedFile(null)
+    resetFileInputs()
   }
 
   const deleteMessage = async (msgId) => {
@@ -483,9 +488,8 @@ const MiddleBox = () => {
           >
             {uploading ? '⏳' : '📤 Send'}
           </button>
-          {/* ✅ Revoke URL on cancel */}
           <button
-            onClick={() => clearStagedFile(stagedFile)}
+            onClick={cancelStagedFile}
             disabled={uploading}
             style={{
               background: '#eee', border: 'none', borderRadius: 8,
@@ -517,30 +521,25 @@ const MiddleBox = () => {
 
         <span className="emoji-btn" onClick={() => setShowEmoji((prev) => !prev)}>😊</span>
 
-        {/* ✅ fileInputKey forces fresh input after every send/cancel */}
         <input
-          key={`img-${fileInputKey}`}
+          ref={imageInputRef}
           type="file"
           id="image"
           accept="image/*"
           hidden
-          onChange={(e) => {
-            handleFileSelect(e.target.files[0], 'image')
-          }}
+          onChange={(e) => handleFileSelect(e.target.files[0], 'image')}
         />
         <label htmlFor="image">
           <img src={assets.gallery_icon} alt="" className="gallery-btn" />
         </label>
 
         <input
-          key={`vid-${fileInputKey}`}
+          ref={videoInputRef}
           type="file"
           id="video-upload"
           accept="video/*"
           hidden
-          onChange={(e) => {
-            handleFileSelect(e.target.files[0], 'video')
-          }}
+          onChange={(e) => handleFileSelect(e.target.files[0], 'video')}
         />
         <label htmlFor="video-upload" title="Send video" style={{ cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>
           🎥
