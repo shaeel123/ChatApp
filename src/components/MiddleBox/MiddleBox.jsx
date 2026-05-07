@@ -256,17 +256,20 @@ const MiddleBox = () => {
     setUploading(false)
   }
 
-  const deleteMessage = async (msgId) => {
-    const { error } = await supabase.from('messages').delete().eq('id', msgId)
-    if (error) { console.error(error); return }
-    setMessages((prev) => prev.filter(m => m.id !== msgId))
-    setHoveredMsgId(null)
-  }
-
-  const copyMessage = (text) => {
-    navigator.clipboard.writeText(text)
-    setHoveredMsgId(null)
-  }
+const deleteMessage = async (msgId) => {
+  const token = tokenRef.current
+  if (!token) return
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/messages?id=eq.${msgId}`, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${token}`,
+    }
+  })
+  if (!res.ok) { console.error('Delete failed:', await res.text()); return }
+  setMessages((prev) => prev.filter(m => m.id !== msgId))
+  setHoveredMsgId(null)
+}
 
   const handleBubbleEnter = (msgId) => {
     clearTimeout(hoverTimer.current)
@@ -274,7 +277,7 @@ const MiddleBox = () => {
   }
 
   const handleBubbleLeave = () => {
-    hoverTimer.current = setTimeout(() => setHoveredMsgId(null), 400)
+    hoverTimer.current = setTimeout(() => setHoveredMsgId(null), 800)
   }
 
   const handleWallpaperUpload = (e) => {
