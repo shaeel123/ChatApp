@@ -73,23 +73,25 @@ const Login = () => {
     setLoading(true)
     try {
       if (currState === "Sign Up") {
+        // ✅ Sign up — send OTP for email verification
         localStorage.clear()
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
         toast.success("OTP sent to your email!")
         setShowOtp(true)
       } else {
+        // ✅ Login — just use password, no OTP needed
         const res = await login(email, password)
         if (!res) {
-          const { data: profile } = await supabase.from('profiles').select('id').eq('email', email).maybeSingle()
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle()
           toast.error(!profile ? "No user found with this email." : "Invalid email or password. Please try again.")
           return
         }
-        await supabase.auth.signOut()
-        const { error: otpError } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })
-        if (otpError) throw otpError
-        toast.success("OTP sent to your email!")
-        setShowOtp(true)
+        navigate('/chat')  // ✅ go straight to chat
       }
     } catch (err) {
       toast.error(err.message || "Something went wrong. Please try again.")
@@ -104,15 +106,21 @@ const Login = () => {
     setVerifying(true)
     try {
       const { data, error } = await supabase.auth.verifyOtp({
-        email, token: otpCode,
-        type: currState === 'Sign Up' ? 'signup' : 'email',
+        email,
+        token: otpCode,
+        type: 'signup',  // ✅ always signup type since OTP only used for Sign Up
       })
       if (error) throw error
-      if (currState === 'Sign Up' && data?.user) {
-        await supabase.from('profiles').upsert({ id: data.user.id, email, name: username, avatar_url: null })
+      if (data?.user) {
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          email,
+          name: username,
+          avatar_url: null
+        })
       }
       toast.success("Email verified successfully!")
-      navigate(currState === 'Sign Up' ? '/profile' : '/chat')
+      navigate('/profile')
     } catch (err) {
       toast.error(err.message || "Invalid OTP. Please try again.")
       setOtp(['', '', '', '', '', ''])
@@ -124,7 +132,7 @@ const Login = () => {
 
   const handleResendOtp = async () => {
     try {
-      const { error } = await supabase.auth.resend({ type: currState === 'Sign Up' ? 'signup' : 'email', email })
+      const { error } = await supabase.auth.resend({ type: 'signup', email })  // ✅ always signup
       if (error) throw error
       toast.success("OTP resent!")
       setOtp(['', '', '', '', '', ''])
@@ -166,9 +174,13 @@ const Login = () => {
           </button>
           <p className="otp-resend">
             Didn't receive it?{" "}
-            <span onClick={handleResendOtp} style={{ cursor: 'pointer', color: '#077eff' }}>Resend OTP</span>
+            <span onClick={handleResendOtp} style={{ cursor: 'pointer', color: '#077eff' }}>
+              Resend OTP
+            </span>
           </p>
-          <p className="otp-back" onClick={() => { setShowOtp(false); setOtp(['', '', '', '', '', '']) }}>← Back</p>
+          <p className="otp-back" onClick={() => { setShowOtp(false); setOtp(['', '', '', '', '', '']) }}>
+            ← Back
+          </p>
         </div>
       </div>
     )
@@ -209,7 +221,10 @@ const Login = () => {
         </button>
 
         <div className="login-term">
-          <input id="agreed" name="agreed" type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+          <input
+            id="agreed" name="agreed" type="checkbox"
+            checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
+          />
           <a href='https://blank.page/' target='_blank' rel="noopener noreferrer">
             Agree to the terms of use & privacy policy
           </a>
@@ -217,9 +232,15 @@ const Login = () => {
 
         <div className="login-forgot">
           {currState === "Sign Up" ? (
-            <p className="login-toggle">Already have an account{" "}<span onClick={() => setCurrState("Login")}>Login here</span></p>
+            <p className="login-toggle">
+              Already have an account{" "}
+              <span onClick={() => setCurrState("Login")}>Login here</span>
+            </p>
           ) : (
-            <p className="login-toggle">Create an account{" "}<span onClick={() => setCurrState("Sign Up")}>Click here</span></p>
+            <p className="login-toggle">
+              Create an account{" "}
+              <span onClick={() => setCurrState("Sign Up")}>Click here</span>
+            </p>
           )}
         </div>
       </form>
