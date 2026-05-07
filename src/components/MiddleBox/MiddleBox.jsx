@@ -173,83 +173,67 @@ const MiddleBox = () => {
   }
 
   const sendStagedFile = async () => {
-    if (!stagedFile || !chatUser) return
-    const cu = await getCurrentUser()
-    if (!cu) return
+  if (!stagedFile || !chatUser) return
+  const cu = await getCurrentUser()
+  if (!cu) return
 
-    setUploading(true)
-    const { file, type } = stagedFile
-    const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
+  setUploading(true)
+  const { file, type } = stagedFile
+  const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
 
-    // Step 1: Upload file to storage
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { contentType: file.type })
+  alert('STARTING UPLOAD')
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file, { contentType: file.type })
 
-    if (uploadError) {
-      console.error('Upload error:', uploadError)
-      alert('Upload failed: ' + uploadError.message)
-      setUploading(false)
-      return
-    }
-
-    // Step 2: Get public URL
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-    const publicUrl = urlData.publicUrl
-
-    // Step 3: Get auth token
-    const { data: sessionData } = await supabase.auth.getSession()
-    const token = sessionData?.session?.access_token
-
-    if (!token) {
-      alert('No auth token — please log in again')
-      setUploading(false)
-      return
-    }
-
-    // Step 4: Insert message via native fetch (works on all mobile browsers)
-    const msgPayload = {
-      content: '',
-      user_id: cu.id,
-      receiver_id: chatUser.id,
-      username: cu.email,
-      avatar_url: userData?.avatar_url || null,
-      ...(type === 'image' ? { image_url: publicUrl } : { video_url: publicUrl })
-    }
-
-    try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${token}`,
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify(msgPayload)
-      })
-
-      const text = await res.text()
-      let result
-      try { result = JSON.parse(text) } catch { result = text }
-
-      if (res.ok && Array.isArray(result) && result[0]) {
-        setMessages((prev) => {
-          if (prev.find(m => m.id === result[0].id)) return prev
-          return [...prev, result[0]]
-        })
-      } else {
-        console.error('Insert failed:', result)
-        alert('Send failed: ' + JSON.stringify(result))
-      }
-    } catch (err) {
-      console.error('Fetch error:', err)
-      alert('Network error: ' + err.message)
-    }
-
-    setStagedFile(null)
+  if (uploadError) {
+    alert('UPLOAD ERROR: ' + uploadError.message)
     setUploading(false)
+    return
   }
+  alert('UPLOAD DONE')
+
+  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
+  alert('URL: ' + urlData.publicUrl)
+
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData?.session?.access_token
+  alert('TOKEN: ' + (token ? token.slice(0, 20) + '...' : 'NULL'))
+
+  if (!token) {
+    setUploading(false)
+    return
+  }
+
+  alert('ABOUT TO FETCH')
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({
+        content: '',
+        user_id: cu.id,
+        receiver_id: chatUser.id,
+        username: cu.email,
+        avatar_url: userData?.avatar_url || null,
+        ...(type === 'image' ? { image_url: urlData.publicUrl } : { video_url: urlData.publicUrl })
+      })
+    })
+    alert('FETCH STATUS: ' + res.status)
+    const text = await res.text()
+    alert('FETCH BODY: ' + text.slice(0, 100))
+  } catch (err) {
+    alert('FETCH THREW: ' + err.message)
+  }
+
+  setStagedFile(null)
+  setUploading(false)
+}
 
   const deleteMessage = async (msgId) => {
     const { error } = await supabase.from('messages').delete().eq('id', msgId)
