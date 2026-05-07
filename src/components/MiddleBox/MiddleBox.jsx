@@ -179,33 +179,46 @@ const MiddleBox = () => {
 
   setUploading(true)
   const { file, type } = stagedFile
-  const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
 
-  alert('STARTING UPLOAD')
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(filePath, file, { contentType: file.type })
-
-  if (uploadError) {
-    alert('UPLOAD ERROR: ' + uploadError.message)
-    setUploading(false)
-    return
-  }
-  alert('UPLOAD DONE')
-
-  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-  alert('URL: ' + urlData.publicUrl)
-
+  // Get token first
   const { data: sessionData } = await supabase.auth.getSession()
   const token = sessionData?.session?.access_token
-  alert('TOKEN: ' + (token ? token.slice(0, 20) + '...' : 'NULL'))
+  alert('TOKEN: ' + (token ? 'YES' : 'NULL'))
+  if (!token) { setUploading(false); return }
 
-  if (!token) {
+  // ✅ Upload via native fetch instead of Supabase storage client
+  const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
+  const uploadUrl = `${SUPABASE_URL}/storage/v1/object/avatars/${filePath}`
+  alert('UPLOADING TO: ' + uploadUrl.slice(0, 60))
+
+  try {
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'Content-Type': file.type,
+        'x-upsert': 'false'
+      },
+      body: file
+    })
+    alert('UPLOAD STATUS: ' + uploadRes.status)
+    if (!uploadRes.ok) {
+      const err = await uploadRes.text()
+      alert('UPLOAD FAILED: ' + err.slice(0, 100))
+      setUploading(false)
+      return
+    }
+  } catch (err) {
+    alert('UPLOAD THREW: ' + err.message)
     setUploading(false)
     return
   }
 
-  alert('ABOUT TO FETCH')
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`
+  alert('PUBLIC URL OK')
+
+  // Insert message via native fetch
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
       method: 'POST',
@@ -221,14 +234,20 @@ const MiddleBox = () => {
         receiver_id: chatUser.id,
         username: cu.email,
         avatar_url: userData?.avatar_url || null,
-        ...(type === 'image' ? { image_url: urlData.publicUrl } : { video_url: urlData.publicUrl })
+        ...(type === 'image' ? { image_url: publicUrl } : { video_url: publicUrl })
       })
     })
-    alert('FETCH STATUS: ' + res.status)
-    const text = await res.text()
-    alert('FETCH BODY: ' + text.slice(0, 100))
+    alert('INSERT STATUS: ' + res.status)
+    const result = await res.json()
+    alert('INSERT RESULT: ' + JSON.stringify(result).slice(0, 100))
+    if (Array.isArray(result) && result[0]) {
+      setMessages((prev) => {
+        if (prev.find(m => m.id === result[0].id)) return prev
+        return [...prev, result[0]]
+      })
+    }
   } catch (err) {
-    alert('FETCH THREW: ' + err.message)
+    alert('INSERT THREW: ' + err.message)
   }
 
   setStagedFile(null)
