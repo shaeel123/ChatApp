@@ -46,6 +46,7 @@ const MiddleBox = () => {
   const hoverTimer = useRef(null)
   const userRef = useRef(null)
   const chatUserRef = useRef(null)
+  const tokenRef = useRef(null) // ✅ Cache token at file-select time for iOS
 
   useEffect(() => { userRef.current = user }, [user])
   useEffect(() => { chatUserRef.current = chatUser }, [chatUser])
@@ -162,97 +163,101 @@ const MiddleBox = () => {
     setShowEmoji(false)
   }
 
-  const handleFileSelect = (file, type) => {
+  // ✅ Now async — grabs and caches token while session is still fresh on iOS
+  const handleFileSelect = async (file, type) => {
     if (!file) return
     if (type === 'video' && file.size > 50 * 1024 * 1024) {
       alert('Video is too large. Please upload a video under 50MB.')
       return
     }
+    // Cache token immediately while the session is accessible
+    const { data: sessionData } = await supabase.auth.getSession()
+    tokenRef.current = sessionData?.session?.access_token || null
+
     const previewUrl = URL.createObjectURL(file)
     setStagedFile({ file, type, previewUrl })
   }
 
   const sendStagedFile = async () => {
-  if (!stagedFile || !chatUser) return
-  const cu = await getCurrentUser()
-  if (!cu) return
+    if (!stagedFile || !chatUser) return
+    const cu = await getCurrentUser()
+    if (!cu) return
 
-  setUploading(true)
-  const { file, type } = stagedFile
+    setUploading(true)
+    const { file, type } = stagedFile
 
-  // Get token first
-  const { data: sessionData } = await supabase.auth.getSession()
-  const token = sessionData?.session?.access_token
-  alert('TOKEN: ' + (token ? 'YES' : 'NULL'))
-  if (!token) { setUploading(false); return }
+    // ✅ Use cached token — avoids iOS session hang on button press
+    const token = tokenRef.current
+    alert('TOKEN: ' + (token ? 'YES' : 'NULL'))
+    if (!token) { setUploading(false); return }
 
-  // ✅ Upload via native fetch instead of Supabase storage client
-  const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
-  const uploadUrl = `${SUPABASE_URL}/storage/v1/object/avatars/${filePath}`
-  alert('UPLOADING TO: ' + uploadUrl.slice(0, 60))
+    // Upload via native fetch instead of Supabase storage client
+    const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
+    const uploadUrl = `${SUPABASE_URL}/storage/v1/object/avatars/${filePath}`
+    alert('UPLOADING TO: ' + uploadUrl.slice(0, 60))
 
-  try {
-    const uploadRes = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': SUPABASE_ANON_KEY,
-        'Content-Type': file.type,
-        'x-upsert': 'false'
-      },
-      body: file
-    })
-    alert('UPLOAD STATUS: ' + uploadRes.status)
-    if (!uploadRes.ok) {
-      const err = await uploadRes.text()
-      alert('UPLOAD FAILED: ' + err.slice(0, 100))
+    try {
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': SUPABASE_ANON_KEY,
+          'Content-Type': file.type,
+          'x-upsert': 'false'
+        },
+        body: file
+      })
+      alert('UPLOAD STATUS: ' + uploadRes.status)
+      if (!uploadRes.ok) {
+        const err = await uploadRes.text()
+        alert('UPLOAD FAILED: ' + err.slice(0, 100))
+        setUploading(false)
+        return
+      }
+    } catch (err) {
+      alert('UPLOAD THREW: ' + err.message)
       setUploading(false)
       return
     }
-  } catch (err) {
-    alert('UPLOAD THREW: ' + err.message)
-    setUploading(false)
-    return
-  }
 
-  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`
-  alert('PUBLIC URL OK')
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`
+    alert('PUBLIC URL OK')
 
-  // Insert message via native fetch
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${token}`,
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify({
-        content: '',
-        user_id: cu.id,
-        receiver_id: chatUser.id,
-        username: cu.email,
-        avatar_url: userData?.avatar_url || null,
-        ...(type === 'image' ? { image_url: publicUrl } : { video_url: publicUrl })
+    // Insert message via native fetch
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          content: '',
+          user_id: cu.id,
+          receiver_id: chatUser.id,
+          username: cu.email,
+          avatar_url: userData?.avatar_url || null,
+          ...(type === 'image' ? { image_url: publicUrl } : { video_url: publicUrl })
+        })
       })
-    })
-    alert('INSERT STATUS: ' + res.status)
-    const result = await res.json()
-    alert('INSERT RESULT: ' + JSON.stringify(result).slice(0, 100))
-    if (Array.isArray(result) && result[0]) {
-      setMessages((prev) => {
-        if (prev.find(m => m.id === result[0].id)) return prev
-        return [...prev, result[0]]
-      })
+      alert('INSERT STATUS: ' + res.status)
+      const result = await res.json()
+      alert('INSERT RESULT: ' + JSON.stringify(result).slice(0, 100))
+      if (Array.isArray(result) && result[0]) {
+        setMessages((prev) => {
+          if (prev.find(m => m.id === result[0].id)) return prev
+          return [...prev, result[0]]
+        })
+      }
+    } catch (err) {
+      alert('INSERT THREW: ' + err.message)
     }
-  } catch (err) {
-    alert('INSERT THREW: ' + err.message)
-  }
 
-  setStagedFile(null)
-  setUploading(false)
-}
+    setStagedFile(null)
+    setUploading(false)
+  }
 
   const deleteMessage = async (msgId) => {
     const { error } = await supabase.from('messages').delete().eq('id', msgId)
