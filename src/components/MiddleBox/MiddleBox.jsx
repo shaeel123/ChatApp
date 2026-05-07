@@ -35,7 +35,10 @@ const MiddleBox = () => {
   const [showWallpaperPicker, setShowWallpaperPicker] = useState(false)
   const [wallpaper, setWallpaper] = useState(DEFAULT_WALLPAPERS[0])
   const [hoveredMsgId, setHoveredMsgId] = useState(null)
-  const [uploadingVideo, setUploadingVideo] = useState(false)
+
+  // ✅ Staged file state — file is stored first, uploaded on button press
+  const [stagedFile, setStagedFile] = useState(null)       // { file, type: 'image'|'video', previewUrl }
+  const [uploading, setUploading] = useState(false)
 
   const messagesEndRef = useRef(null)
   const chatMsgRef = useRef(null)
@@ -158,92 +161,56 @@ const MiddleBox = () => {
     setShowEmoji(false)
   }
 
-  const sendImage = async (file) => {
-  if (!file || !chatUser) { alert('EARLY EXIT'); return }
-  const cu = await getCurrentUser()
-  if (!cu) { alert('NO USER'); return }
-  alert('USER OK')
-
-  const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
-  const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file)
-  if (uploadError) { alert('UPLOAD ERROR: ' + uploadError.message); return }
-  alert('UPLOAD OK')
-
-  const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
-
-  // ✅ Use native fetch instead of Supabase client for iOS compatibility
-  const { data: sessionData } = await supabase.auth.getSession()
-  const token = sessionData?.session?.access_token
-  alert('TOKEN: ' + (token ? 'YES' : 'NO'))
-
-  try {
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${token}`,
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify({
-        content: '',
-        image_url: urlData.publicUrl,
-        user_id: cu.id,
-        receiver_id: chatUser.id,
-        username: cu.email,
-        avatar_url: userData?.avatar_url || null
-      })
-    })
-
-    const result = await res.json()
-    alert('FETCH RESULT: ' + JSON.stringify(result))
-
-    if (Array.isArray(result) && result[0]) {
-      setMessages((prev) => {
-        if (prev.find(m => m.id === result[0].id)) return prev
-        return [...prev, result[0]]
-      })
-    }
-  } catch (err) {
-    alert('FETCH ERROR: ' + err.message)
-  }
-}
-
-  const sendVideo = async (file) => {
-    if (!file || !chatUser) return
-    if (file.size > 50 * 1024 * 1024) {
+  // ✅ Stage the file — called from onChange (safe, no async network calls)
+  const handleFileSelect = (file, type) => {
+    if (!file) return
+    if (type === 'video' && file.size > 50 * 1024 * 1024) {
       alert('Video is too large. Please upload a video under 50MB.')
       return
     }
+    const previewUrl = URL.createObjectURL(file)
+    setStagedFile({ file, type, previewUrl })
+  }
+
+  // ✅ Actually upload — called from a button press (safe on iOS)
+  const sendStagedFile = async () => {
+    if (!stagedFile || !chatUser) return
     const cu = await getCurrentUser()
     if (!cu) return
 
-    setUploadingVideo(true)
+    setUploading(true)
+    const { file, type } = stagedFile
     const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
+
     const { error: uploadError } = await supabase.storage
-      .from('avatars').upload(filePath, file, { contentType: file.type })
+      .from('avatars')
+      .upload(filePath, file, { contentType: file.type })
+
     if (uploadError) {
-      console.error('Video upload error:', uploadError)
-      setUploadingVideo(false)
+      console.error('Upload error:', uploadError)
+      setUploading(false)
       return
     }
 
     const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
 
+    const msgPayload = {
+      content: '',
+      user_id: cu.id,
+      receiver_id: chatUser.id,
+      username: cu.email,
+      avatar_url: userData?.avatar_url || null,
+      ...(type === 'image' ? { image_url: urlData.publicUrl } : { video_url: urlData.publicUrl })
+    }
+
     const { data: insertedArr, error } = await supabase
       .from('messages')
-      .insert([{
-        content: '',
-        video_url: urlData.publicUrl,
-        user_id: cu.id,
-        receiver_id: chatUser.id,
-        username: cu.email,
-        avatar_url: userData?.avatar_url
-      }])
+      .insert([msgPayload])
       .select()
 
-    if (error) { console.error('Send video error:', error) }
-    else {
+    if (error) {
+      console.error('Insert error:', error)
+    } else {
       const inserted = insertedArr?.[0]
       if (inserted) {
         setMessages((prev) => {
@@ -252,7 +219,9 @@ const MiddleBox = () => {
         })
       }
     }
-    setUploadingVideo(false)
+
+    setStagedFile(null)
+    setUploading(false)
   }
 
   const deleteMessage = async (msgId) => {
@@ -428,16 +397,45 @@ const MiddleBox = () => {
           )
         })}
 
-        {uploadingVideo && (
-          <div style={{ textAlign: 'center', padding: '8px', fontSize: '13px', color: 'gray' }}>
-            📤 Uploading video...
-          </div>
-        )}
-
         <div ref={messagesEndRef} />
       </div>
 
       {showScrollBtn && <button className="scroll-down-btn" onClick={scrollToBottom}>↓</button>}
+
+      {/* ✅ Staged file preview bar — shows above input when file is selected */}
+      {stagedFile && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '8px 12px', background: '#f0f0f0', borderTop: '1px solid #ddd'
+        }}>
+          {stagedFile.type === 'image'
+            ? <img src={stagedFile.previewUrl} alt="preview" style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 6 }} />
+            : <video src={stagedFile.previewUrl} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 6 }} muted />
+          }
+          <span style={{ flex: 1, fontSize: 12, color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {stagedFile.file.name}
+          </span>
+          <button
+            onClick={sendStagedFile}
+            disabled={uploading}
+            style={{
+              background: '#077eff', color: 'white', border: 'none',
+              borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13
+            }}
+          >
+            {uploading ? '⏳' : '📤 Send'}
+          </button>
+          <button
+            onClick={() => setStagedFile(null)}
+            style={{
+              background: '#eee', border: 'none', borderRadius: 8,
+              padding: '6px 10px', cursor: 'pointer', fontSize: 13
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="chat-input" style={{ background: wallpaper.inputBar }}>
         {showEmoji && (
@@ -459,14 +457,14 @@ const MiddleBox = () => {
 
         <span className="emoji-btn" onClick={() => setShowEmoji((prev) => !prev)}>😊</span>
 
+        {/* ✅ Image picker — just stores file, no async upload */}
         <input
           type="file"
           id="image"
           accept="image/*"
           hidden
-          onChange={async (e) => {
-            const file = e.target.files[0]
-            if (file) await sendImage(file)
+          onChange={(e) => {
+            handleFileSelect(e.target.files[0], 'image')
             e.target.value = ''
           }}
         />
@@ -474,14 +472,14 @@ const MiddleBox = () => {
           <img src={assets.gallery_icon} alt="" className="gallery-btn" />
         </label>
 
+        {/* ✅ Video picker — just stores file, no async upload */}
         <input
           type="file"
           id="video-upload"
           accept="video/*"
           hidden
-          onChange={async (e) => {
-            const file = e.target.files[0]
-            if (file) await sendVideo(file)
+          onChange={(e) => {
+            handleFileSelect(e.target.files[0], 'video')
             e.target.value = ''
           }}
         />
