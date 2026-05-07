@@ -46,7 +46,7 @@ const MiddleBox = () => {
   const hoverTimer = useRef(null)
   const userRef = useRef(null)
   const chatUserRef = useRef(null)
-  const tokenRef = useRef(null) // ✅ Cache token at file-select time for iOS
+  const tokenRef = useRef(null)
 
   useEffect(() => { userRef.current = user }, [user])
   useEffect(() => { chatUserRef.current = chatUser }, [chatUser])
@@ -163,17 +163,14 @@ const MiddleBox = () => {
     setShowEmoji(false)
   }
 
-  // ✅ Now async — grabs and caches token while session is still fresh on iOS
   const handleFileSelect = async (file, type) => {
     if (!file) return
     if (type === 'video' && file.size > 50 * 1024 * 1024) {
       alert('Video is too large. Please upload a video under 50MB.')
       return
     }
-    // Cache token immediately while the session is accessible
     const { data: sessionData } = await supabase.auth.getSession()
     tokenRef.current = sessionData?.session?.access_token || null
-
     const previewUrl = URL.createObjectURL(file)
     setStagedFile({ file, type, previewUrl })
   }
@@ -186,15 +183,11 @@ const MiddleBox = () => {
     setUploading(true)
     const { file, type } = stagedFile
 
-    // ✅ Use cached token — avoids iOS session hang on button press
     const token = tokenRef.current
-    alert('TOKEN: ' + (token ? 'YES' : 'NULL'))
     if (!token) { setUploading(false); return }
 
-    // Upload via native fetch instead of Supabase storage client
     const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
     const uploadUrl = `${SUPABASE_URL}/storage/v1/object/avatars/${filePath}`
-    alert('UPLOADING TO: ' + uploadUrl.slice(0, 60))
 
     try {
       const uploadRes = await fetch(uploadUrl, {
@@ -207,23 +200,19 @@ const MiddleBox = () => {
         },
         body: file
       })
-      alert('UPLOAD STATUS: ' + uploadRes.status)
       if (!uploadRes.ok) {
-        const err = await uploadRes.text()
-        alert('UPLOAD FAILED: ' + err.slice(0, 100))
+        console.error('Upload failed:', await uploadRes.text())
         setUploading(false)
         return
       }
     } catch (err) {
-      alert('UPLOAD THREW: ' + err.message)
+      console.error('Upload error:', err)
       setUploading(false)
       return
     }
 
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`
-    alert('PUBLIC URL OK')
 
-    // Insert message via native fetch
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
         method: 'POST',
@@ -242,9 +231,7 @@ const MiddleBox = () => {
           ...(type === 'image' ? { image_url: publicUrl } : { video_url: publicUrl })
         })
       })
-      alert('INSERT STATUS: ' + res.status)
       const result = await res.json()
-      alert('INSERT RESULT: ' + JSON.stringify(result).slice(0, 100))
       if (Array.isArray(result) && result[0]) {
         setMessages((prev) => {
           if (prev.find(m => m.id === result[0].id)) return prev
@@ -252,7 +239,7 @@ const MiddleBox = () => {
         })
       }
     } catch (err) {
-      alert('INSERT THREW: ' + err.message)
+      console.error('Insert error:', err)
     }
 
     setStagedFile(null)
@@ -437,7 +424,6 @@ const MiddleBox = () => {
 
       {showScrollBtn && <button className="scroll-down-btn" onClick={scrollToBottom}>↓</button>}
 
-      {/* Staged file preview bar */}
       {stagedFile && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
