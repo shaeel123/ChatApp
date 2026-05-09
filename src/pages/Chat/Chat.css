@@ -1,162 +1,44 @@
-.login {
-    min-height: 100vh;
-    background-image: url('/bg4.png');
-    background-size: cover;
-    background-position: center;
-    align-items: center;
-    justify-content: space-evenly;
-    display: flex;
+.chat {
+  height: 100vh;
+  height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }
 
-.logo {
-    width: max(20vw, 200px);
+.chat-container {
+  flex: 1;
+  display: flex;
+  height: 100%;
+  overflow: hidden;
 }
 
-.login-form {
-    background: white;
-    padding: 20px 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    border-radius: 10px;
+.home-btn {
+  position: fixed;
+  top: 14px;
+  left: 160px;
+  z-index: 100;
+  cursor: pointer;
+  color: #aaa;
+  transition: color 0.2s;
 }
 
-h2 {
-    font-weight: 500;
+.home-btn:hover {
+  color: #077eff;
 }
 
-.form-input {
-    padding: 8px 10px;
-    border: 1px solid #c9c9c9;
-    border-radius: 4px;
-    outline-color: purple;
+.mobile-chat-view {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
-button {
-    padding: 10px;
-    background-color: #077eff;
-    color: white;
-    font-size: 16px;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-}
-
-.login-term {
-    display: flex;
-    gap: 5px;
-    font-size: 12px;
-    color: rgb(106, 106, 235);
-}
-
-span {
-    font-weight: 500;
-    color: rgb(106, 106, 235);
-    cursor: pointer;
-}
-
-.otp-form {
-    text-align: center;
-}
-
-.otp-subtitle {
-    font-size: 13px;
-    color: #666;
-    margin-bottom: 24px;
-    line-height: 1.6;
-}
-
-.otp-inputs {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 24px;
-}
-
-.otp-box {
-    width: 44px;
-    height: 52px;
-    text-align: center;
-    font-size: 22px;
-    font-weight: 700;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    outline: none;
-    transition: border 0.2s;
-}
-
-.otp-box:focus {
-    border-color: #077eff;
-}
-
-.otp-verify-btn {
-    width: 100%;
-    padding: 12px;
-    background: #077eff;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    cursor: pointer;
-    margin-bottom: 16px;
-}
-
-.otp-verify-btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-.otp-resend {
-    font-size: 13px;
-    color: #666;
-    margin-bottom: 12px;
-}
-
-.otp-back {
-    font-size: 13px;
-    color: #077eff;
-    cursor: pointer;
-    margin-top: 8px;
-}
-
+/* Hide the duplicate back btn in MiddleBox on mobile since Chat.jsx has its own */
 @media (max-width: 768px) {
-    .login {
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 30px 20px;
-        gap: 30px;
-    }
-
-    .logo {
-        width: 130px;
-    }
-
-    .login-form {
-        width: 92vw;
-        max-width: 400px;
-        padding: 24px 20px;
-        box-sizing: border-box;
-    }
-
-    .form-input {
-        width: 100%;
-        box-sizing: border-box;
-        font-size: 16px;
-        padding: 12px 10px;
-    }
-
-    h2 {
-        font-size: 22px;
-    }
-
-    button {
-        font-size: 15px;
-        padding: 12px;
-    }
-
-    .login-term {
-        font-size: 11px;
-        flex-wrap: wrap;
-    }
+  .back-btn-wrapper {
+    display: none;
+  }
 }

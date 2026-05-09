@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import './MiddleBox.css'
 import assets from '../../assets/assets'
 import { supabase } from '../../config/supabase'
@@ -29,7 +29,6 @@ const MiddleBox = () => {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [currentUserId, setCurrentUserId] = useState(null)
-  const [user, setUser] = useState(null)
   const [showEmoji, setShowEmoji] = useState(false)
   const [previewImg, setPreviewImg] = useState(null)
   const [previewVideo, setPreviewVideo] = useState(null)
@@ -37,20 +36,19 @@ const MiddleBox = () => {
   const [muted, setMuted] = useState(true)
   const [showWallpaperPicker, setShowWallpaperPicker] = useState(false)
   const [wallpaper, setWallpaper] = useState(DEFAULT_WALLPAPERS[0])
-  const [hoveredMsgId, setHoveredMsgId] = useState(null)
+  const [tappedMsgId, setTappedMsgId] = useState(null)
   const [stagedFile, setStagedFile] = useState(null)
   const [uploading, setUploading] = useState(false)
 
   const messagesEndRef = useRef(null)
   const chatMsgRef = useRef(null)
-  const hoverTimer = useRef(null)
   const userRef = useRef(null)
   const chatUserRef = useRef(null)
-  const tokenRef = useRef(null)
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
+  const longPressTimer = useRef(null)
+  const scrollTimer = useRef(null)
 
-  useEffect(() => { userRef.current = user }, [user])
   useEffect(() => { chatUserRef.current = chatUser }, [chatUser])
 
   useEffect(() => {
@@ -69,21 +67,33 @@ const MiddleBox = () => {
     }
   }, [chatUser])
 
+  // ✅ Set user on mount
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
-        setUser(data.user)
-        setCurrentUserId(data.user.id)
         userRef.current = data.user
+        setCurrentUserId(data.user.id)
       }
-    })
-    supabase.auth.getSession().then(({ data }) => {
-      tokenRef.current = data?.session?.access_token || null
     })
   }, [])
 
-  const onEmojiClick = (emojiData) => {
-    setInput((prev) => prev + emojiData.emoji)
+  // ✅ Always get a fresh token — never use stale cache
+  const getFreshToken = async () => {
+    const { data } = await supabase.auth.getSession()
+    if (data?.session?.access_token) return data.session.access_token
+    // Fallback: force refresh
+    const { data: refreshed } = await supabase.auth.refreshSession()
+    return refreshed?.session?.access_token || null
+  }
+
+  const getCurrentUser = async () => {
+    if (userRef.current) return userRef.current
+    const { data } = await supabase.auth.getUser()
+    if (data?.user) {
+      userRef.current = data.user
+      setCurrentUserId(data.user.id)
+    }
+    return data?.user || null
   }
 
   const fetchMessages = async (myId, otherId) => {
@@ -95,25 +105,13 @@ const MiddleBox = () => {
     if (!error) setMessages(data)
   }
 
-  const getCurrentUser = async () => {
-    if (userRef.current) return userRef.current
-    const { data } = await supabase.auth.getUser()
-    if (data?.user) {
-      setUser(data.user)
-      userRef.current = data.user
-      setCurrentUserId(data.user.id)
-    }
-    return data?.user || null
-  }
-
   useEffect(() => {
     let channel
     const setup = async () => {
       const { data } = await supabase.auth.getUser()
       if (!data.user) return
-      setUser(data.user)
-      setCurrentUserId(data.user.id)
       userRef.current = data.user
+      setCurrentUserId(data.user.id)
       if (!chatUser) return
       await fetchMessages(data.user.id, chatUser.id)
       await supabase
@@ -134,7 +132,7 @@ const MiddleBox = () => {
               (msg.user_id === cu.id && msg.receiver_id === chat.id) ||
               (msg.user_id === chat.id && msg.receiver_id === cu.id)
             ) {
-              setMessages((prev) => {
+              setMessages(prev => {
                 if (prev.find(m => m.id === msg.id)) return prev
                 return [...prev, { ...msg, created_at: msg.created_at || new Date().toISOString() }]
               })
@@ -151,55 +149,80 @@ const MiddleBox = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const handleScroll = () => {
-    const el = chatMsgRef.current
-    if (!el) return
-    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-    setShowScrollBtn(distanceFromBottom > 100)
-  }
+  // Debounced scroll handler — avoids setState on every scroll frame
+  const handleScroll = useCallback(() => {
+    if (scrollTimer.current) return
+    scrollTimer.current = setTimeout(() => {
+      scrollTimer.current = null
+      const el = chatMsgRef.current
+      if (!el) return
+      setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 120)
+    }, 100)
+  }, [])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // ✅ Reset file inputs via refs — no re-mounting, no broken labels
   const resetFileInputs = () => {
     if (imageInputRef.current) imageInputRef.current.value = ''
     if (videoInputRef.current) videoInputRef.current.value = ''
   }
 
+  // ✅ sendMessage: fresh token every time, add to state directly
   const sendMessage = async () => {
-    if (!input.trim() || !chatUser) return
+    const text = input.trim()
+    if (!text || !chatUser) return
     const cu = await getCurrentUser()
     if (!cu) return
-    const { error } = await supabase.from('messages').insert([{
-      content: input,
-      user_id: cu.id,
-      receiver_id: chatUser.id,
-      username: cu.email,
-      avatar_url: userData?.avatar_url
-    }])
-    if (error) { console.error(error); return }
+    const token = await getFreshToken()
+    if (!token) return
+
     setInput('')
     setShowEmoji(false)
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`,
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify({
+          content: text,
+          user_id: cu.id,
+          receiver_id: chatUser.id,
+          username: cu.email,
+          avatar_url: userData?.avatar_url || null
+        })
+      })
+      const result = await res.json()
+      if (Array.isArray(result) && result[0]) {
+        setMessages(prev => {
+          if (prev.find(m => m.id === result[0].id)) return prev
+          return [...prev, result[0]]
+        })
+      }
+    } catch (err) {
+      console.error('Send error:', err)
+    }
   }
 
   const handleFileSelect = async (file, type) => {
     if (!file) return
-    if (type === 'video' && file.size > 50 * 1024 * 1024) {
-      alert('Video is too large. Please upload a video under 50MB.')
+    if (type === 'video' && file.size > 100 * 1024 * 1024) {
+      alert('Video is too large. Please upload a video under 100MB.')
       return
     }
-    // ✅ Revoke previous preview URL before creating a new one
+    // Revoke old preview URL
     if (stagedFile?.previewUrl) URL.revokeObjectURL(stagedFile.previewUrl)
-
-    const { data: sessionData } = await supabase.auth.getSession()
-    tokenRef.current = sessionData?.session?.access_token || null
-
     const previewUrl = URL.createObjectURL(file)
     setStagedFile({ file, type, previewUrl })
   }
 
+  // ✅ sendStagedFile: gets fresh token right before upload
   const sendStagedFile = async () => {
     if (!stagedFile || !chatUser) return
     const cu = await getCurrentUser()
@@ -208,10 +231,16 @@ const MiddleBox = () => {
     setUploading(true)
     const { file, type, previewUrl } = stagedFile
 
-    const token = tokenRef.current
-    if (!token) { setUploading(false); return }
+    // Get fresh token immediately before upload
+    const token = await getFreshToken()
+    if (!token) {
+      console.error('No auth token')
+      setUploading(false)
+      return
+    }
 
-    const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
+    const ext = file.name.split('.').pop() || (type === 'video' ? 'mp4' : 'jpg')
+    const filePath = `${cu.id}/messages/${Date.now()}.${ext}`
     const uploadUrl = `${SUPABASE_URL}/storage/v1/object/avatars/${filePath}`
 
     try {
@@ -220,13 +249,14 @@ const MiddleBox = () => {
         headers: {
           'Authorization': `Bearer ${token}`,
           'apikey': SUPABASE_ANON_KEY,
-          'Content-Type': file.type,
-          'x-upsert': 'false'
+          'Content-Type': file.type || (type === 'video' ? 'video/mp4' : 'image/jpeg'),
+          'x-upsert': 'true'
         },
         body: file
       })
       if (!uploadRes.ok) {
-        console.error('Upload failed:', await uploadRes.text())
+        const errText = await uploadRes.text()
+        console.error('Upload failed:', errText)
         setUploading(false)
         return
       }
@@ -258,7 +288,7 @@ const MiddleBox = () => {
       })
       const result = await res.json()
       if (Array.isArray(result) && result[0]) {
-        setMessages((prev) => {
+        setMessages(prev => {
           if (prev.find(m => m.id === result[0].id)) return prev
           return [...prev, result[0]]
         })
@@ -267,7 +297,6 @@ const MiddleBox = () => {
       console.error('Insert error:', err)
     }
 
-    // ✅ Cleanup: revoke URL, clear state, reset inputs
     URL.revokeObjectURL(previewUrl)
     setStagedFile(null)
     resetFileInputs()
@@ -281,32 +310,36 @@ const MiddleBox = () => {
   }
 
   const deleteMessage = async (msgId) => {
-    const token = tokenRef.current
+    const token = await getFreshToken()
     if (!token) return
     const res = await fetch(`${SUPABASE_URL}/rest/v1/messages?id=eq.${msgId}`, {
       method: 'DELETE',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${token}`,
-      }
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${token}` }
     })
     if (!res.ok) { console.error('Delete failed:', await res.text()); return }
-    setMessages((prev) => prev.filter(m => m.id !== msgId))
-    setHoveredMsgId(null)
+    setMessages(prev => prev.filter(m => m.id !== msgId))
+    setTappedMsgId(null)
   }
 
   const copyMessage = (text) => {
     navigator.clipboard.writeText(text)
-    setHoveredMsgId(null)
+    setTappedMsgId(null)
   }
 
-  const handleBubbleEnter = (msgId) => {
-    clearTimeout(hoverTimer.current)
-    setHoveredMsgId(msgId)
+  // ✅ Long press for mobile delete (500ms hold)
+  const handleTouchStart = (msgId) => {
+    longPressTimer.current = setTimeout(() => {
+      setTappedMsgId(prev => prev === msgId ? null : msgId)
+    }, 500)
   }
 
-  const handleBubbleLeave = () => {
-    hoverTimer.current = setTimeout(() => setHoveredMsgId(null), 800)
+  const handleTouchEnd = () => {
+    clearTimeout(longPressTimer.current)
+  }
+
+  // ✅ Single tap toggles context menu on mobile
+  const handleBubbleTap = (msgId) => {
+    setTappedMsgId(prev => prev === msgId ? null : msgId)
   }
 
   const handleWallpaperUpload = (e) => {
@@ -330,11 +363,15 @@ const MiddleBox = () => {
     return { background: wallpaper.bg }
   }
 
+  const onEmojiClick = (emojiData) => {
+    setInput(prev => prev + emojiData.emoji)
+  }
+
   if (!chatUser) {
     return (
       <div className='chat-box chat-welcome'>
         <video className="welcome-video" src="/Chatapp-video.mp4" autoPlay loop playsInline muted={muted} />
-        <button className="unmute-btn" onClick={() => setMuted((prev) => !prev)}>
+        <button className="unmute-btn" onClick={() => setMuted(prev => !prev)}>
           {muted ? '🔇 Click to unmute' : '🔊 Mute'}
         </button>
       </div>
@@ -342,24 +379,24 @@ const MiddleBox = () => {
   }
 
   return (
-    <div className='chat-box'>
+    <div className='chat-box' onClick={() => { if (tappedMsgId) setTappedMsgId(null) }}>
       <div className="chat-user">
         <img
           src={chatUser?.avatar_url || DEFAULT_AVATAR}
           alt=""
           className="clickable-avatar"
           onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR }}
-          onClick={() => setPreviewImg(chatUser?.avatar_url || DEFAULT_AVATAR)}
+          onClick={(e) => { e.stopPropagation(); setPreviewImg(chatUser?.avatar_url || DEFAULT_AVATAR) }}
         />
         <p>
-          {chatUser?.name?.trim() || "Unknown User"}
+          {chatUser?.name?.trim() || 'Unknown User'}
           {chatUser?.is_online && <img className='dot' src={assets.green_dot} alt="" />}
         </p>
 
         <div className="wallpaper-btn-wrapper">
-          <span className="wallpaper-btn" title="Change theme" onClick={() => setShowWallpaperPicker((prev) => !prev)}>🎨</span>
+          <span className="wallpaper-btn" onClick={(e) => { e.stopPropagation(); setShowWallpaperPicker(prev => !prev) }}>🎨</span>
           {showWallpaperPicker && (
-            <div className="wallpaper-picker">
+            <div className="wallpaper-picker" onClick={e => e.stopPropagation()}>
               <p className="wallpaper-picker-title">Choose Theme</p>
               <div className="wallpaper-grid">
                 {DEFAULT_WALLPAPERS.map((w) => (
@@ -387,58 +424,88 @@ const MiddleBox = () => {
 
         <div className="back-btn-wrapper" onClick={() => setChatUser(null)}>
           <span className="back-btn">&#8592;</span>
-          <span className="back-tooltip">Go back to search users</span>
+          <span className="back-tooltip">Go back</span>
         </div>
       </div>
 
       <div className="chat-msg" ref={chatMsgRef} onScroll={handleScroll} style={getChatMsgStyle()}>
         {messages.map((msg) => {
           const isMe = msg.user_id === currentUserId
-          const isHovered = hoveredMsgId === msg.id
+          const isActive = tappedMsgId === msg.id
 
           return (
             <div key={msg.id} className={isMe ? 'r-msg' : 's-msg'}>
               <div className="msg-wrapper">
 
                 {msg.image_url ? (
-                  <div style={{ position: 'relative', display: 'inline-block' }}
-                    onMouseEnter={() => handleBubbleEnter(msg.id)} onMouseLeave={handleBubbleLeave}>
-                    <img src={msg.image_url} alt="shared" className="chat-image" onClick={() => setPreviewImg(msg.image_url)} />
-                    {isHovered && isMe && (
-                      <div className="msg-context-menu menu-left"
-                        onMouseEnter={() => clearTimeout(hoverTimer.current)} onMouseLeave={handleBubbleLeave}>
+                  <div
+                    style={{ position: 'relative', display: 'inline-block' }}
+                    onTouchStart={() => handleTouchStart(msg.id)}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchMove={handleTouchEnd}
+                    onMouseEnter={() => setTappedMsgId(msg.id)}
+                    onMouseLeave={() => setTappedMsgId(null)}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <img
+                      src={msg.image_url}
+                      alt="shared"
+                      className="chat-image"
+                      onClick={() => setPreviewImg(msg.image_url)}
+                    />
+                    {isActive && isMe && (
+                      <div className="msg-context-menu menu-left">
                         <button onClick={() => deleteMessage(msg.id)}>🗑 Delete</button>
                       </div>
                     )}
                   </div>
 
                 ) : msg.video_url ? (
-                  <div style={{ position: 'relative', display: 'inline-block' }}
-                    onMouseEnter={() => handleBubbleEnter(msg.id)} onMouseLeave={handleBubbleLeave}>
+                  <div
+                    style={{ position: 'relative', display: 'inline-block' }}
+                    onTouchStart={() => handleTouchStart(msg.id)}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchMove={handleTouchEnd}
+                    onMouseEnter={() => setTappedMsgId(msg.id)}
+                    onMouseLeave={() => setTappedMsgId(null)}
+                    onClick={e => e.stopPropagation()}
+                  >
                     <div className="chat-video-wrapper">
-                      <video src={msg.video_url} className="chat-video" controls preload="metadata" onClick={(e) => e.stopPropagation()} />
-                      <button className="video-fullscreen-btn" title="Open fullscreen" onClick={() => setPreviewVideo(msg.video_url)}>⛶</button>
+                      <video
+                        src={msg.video_url}
+                        className="chat-video"
+                        controls
+                        playsInline
+                        preload="metadata"
+                        onClick={e => e.stopPropagation()}
+                      />
+                      <button className="video-fullscreen-btn" onClick={() => setPreviewVideo(msg.video_url)}>⛶</button>
                     </div>
-                    {isHovered && isMe && (
-                      <div className="msg-context-menu menu-left"
-                        onMouseEnter={() => clearTimeout(hoverTimer.current)} onMouseLeave={handleBubbleLeave}>
+                    {isActive && isMe && (
+                      <div className="msg-context-menu menu-left">
                         <button onClick={() => deleteMessage(msg.id)}>🗑 Delete</button>
                       </div>
                     )}
                   </div>
 
                 ) : (
-                  <div style={{ position: 'relative', display: 'inline-block' }}
-                    onMouseEnter={() => handleBubbleEnter(msg.id)} onMouseLeave={handleBubbleLeave}>
+                  <div
+                    style={{ position: 'relative', display: 'inline-block' }}
+                    onTouchStart={() => handleTouchStart(msg.id)}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchMove={handleTouchEnd}
+                    onMouseEnter={() => setTappedMsgId(msg.id)}
+                    onMouseLeave={() => setTappedMsgId(null)}
+                    onClick={e => { e.stopPropagation(); handleBubbleTap(msg.id) }}
+                  >
                     <p className="msg" style={{
                       background: isMe ? wallpaper.bubbleSent : wallpaper.bubbleReceived,
                       color: isMe ? wallpaper.textSent : wallpaper.textReceived,
                     }}>
                       {msg.content}
                     </p>
-                    {isHovered && (
-                      <div className={`msg-context-menu ${isMe ? 'menu-left' : 'menu-right'}`}
-                        onMouseEnter={() => clearTimeout(hoverTimer.current)} onMouseLeave={handleBubbleLeave}>
+                    {isActive && (
+                      <div className={`msg-context-menu ${isMe ? 'menu-left' : 'menu-right'}`}>
                         <button onClick={() => copyMessage(msg.content)}>📋 Copy</button>
                         {isMe && <button onClick={() => deleteMessage(msg.id)}>🗑 Delete</button>}
                       </div>
@@ -447,8 +514,11 @@ const MiddleBox = () => {
                 )}
 
                 <div className="msg-info">
-                  <img src={msg.avatar_url || DEFAULT_AVATAR} alt=""
-                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR }} />
+                  <img
+                    src={msg.avatar_url || DEFAULT_AVATAR}
+                    alt=""
+                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR }}
+                  />
                   <p style={{ color: wallpaper.id === 'default' ? 'gray' : 'rgba(255,255,255,0.8)' }}>
                     {new Date(msg.created_at + 'Z').toLocaleTimeString('en-IN', {
                       hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
@@ -460,20 +530,22 @@ const MiddleBox = () => {
             </div>
           )
         })}
-
         <div ref={messagesEndRef} />
       </div>
 
-      {showScrollBtn && <button className="scroll-down-btn" onClick={scrollToBottom}>↓</button>}
+      {showScrollBtn && (
+        <button className="scroll-down-btn" onClick={scrollToBottom}>↓</button>
+      )}
 
       {stagedFile && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          padding: '8px 12px', background: '#f0f0f0', borderTop: '1px solid #ddd'
+          padding: '8px 12px', background: '#f0f0f0', borderTop: '1px solid #ddd',
+          flexShrink: 0
         }}>
           {stagedFile.type === 'image'
             ? <img src={stagedFile.previewUrl} alt="preview" style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 6 }} />
-            : <video src={stagedFile.previewUrl} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 6 }} muted />
+            : <video src={stagedFile.previewUrl} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 6 }} muted playsInline />
           }
           <span style={{ flex: 1, fontSize: 12, color: '#555', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {stagedFile.file.name}
@@ -481,20 +553,14 @@ const MiddleBox = () => {
           <button
             onClick={sendStagedFile}
             disabled={uploading}
-            style={{
-              background: '#077eff', color: 'white', border: 'none',
-              borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13
-            }}
+            style={{ background: '#077eff', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13 }}
           >
             {uploading ? '⏳' : '📤 Send'}
           </button>
           <button
             onClick={cancelStagedFile}
             disabled={uploading}
-            style={{
-              background: '#eee', border: 'none', borderRadius: 8,
-              padding: '6px 10px', cursor: 'pointer', fontSize: 13
-            }}
+            style={{ background: '#eee', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 13 }}
           >
             ✕
           </button>
@@ -509,8 +575,6 @@ const MiddleBox = () => {
         )}
 
         <input
-          id="chat-message"
-          name="message"
           type="text"
           placeholder="Send a message"
           value={input}
@@ -519,7 +583,7 @@ const MiddleBox = () => {
           style={{ background: 'transparent', color: wallpaper.id === 'default' ? '#333' : wallpaper.textReceived }}
         />
 
-        <span className="emoji-btn" onClick={() => setShowEmoji((prev) => !prev)}>😊</span>
+        <span className="emoji-btn" onClick={() => setShowEmoji(prev => !prev)}>😊</span>
 
         <input
           ref={imageInputRef}
@@ -541,7 +605,7 @@ const MiddleBox = () => {
           hidden
           onChange={(e) => handleFileSelect(e.target.files[0], 'video')}
         />
-        <label htmlFor="video-upload" title="Send video" style={{ cursor: 'pointer', fontSize: '18px', lineHeight: 1 }}>
+        <label htmlFor="video-upload" style={{ cursor: 'pointer', fontSize: '20px', lineHeight: 1 }}>
           🎥
         </label>
 
@@ -550,7 +614,7 @@ const MiddleBox = () => {
 
       {previewImg && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setPreviewImg(null)}>
-          <div className="img-preview-box" onClick={(e) => e.stopPropagation()}>
+          <div className="img-preview-box" onClick={e => e.stopPropagation()}>
             <img src={previewImg} alt="preview" />
             <button className="img-preview-close" onClick={() => setPreviewImg(null)}>✕</button>
           </div>
@@ -560,8 +624,8 @@ const MiddleBox = () => {
 
       {previewVideo && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setPreviewVideo(null)}>
-          <div className="img-preview-box video-preview-box" onClick={(e) => e.stopPropagation()}>
-            <video src={previewVideo} controls autoPlay style={{ maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px' }} />
+          <div className="img-preview-box video-preview-box" onClick={e => e.stopPropagation()}>
+            <video src={previewVideo} controls autoPlay playsInline style={{ maxWidth: '90vw', maxHeight: '80vh', borderRadius: '10px' }} />
             <button className="img-preview-close" onClick={() => setPreviewVideo(null)}>✕</button>
           </div>
         </div>,
