@@ -208,8 +208,10 @@ const MiddleBox = () => {
     setUploading(true)
     const { file, type, previewUrl } = stagedFile
 
-    const token = tokenRef.current
-    if (!token) { setUploading(false); return }
+    const { data: freshSession } = await supabase.auth.getSession()
+const token = freshSession?.session?.access_token || tokenRef.current
+tokenRef.current = token
+if (!token) { setUploading(false); return }
 
     const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
     const uploadUrl = `${SUPABASE_URL}/storage/v1/object/avatars/${filePath}`
