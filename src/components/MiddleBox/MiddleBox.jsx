@@ -567,7 +567,7 @@ const MiddleBox = () => {
         </div>
       )}
 
-      <div className="chat-input" style={{ background: wallpaper.inputBar }}>
+      <div className="chat-input" style={{ background: wallpaper.inputBar }} onClick={e => e.stopPropagation()}>
         {showEmoji && (
           <div className="emoji-picker">
             <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} />
@@ -575,11 +575,14 @@ const MiddleBox = () => {
         )}
 
         <input
+          id="chat-message"
+          name="message"
           type="text"
           placeholder="Send a message"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') sendMessage() }}
+          onClick={e => e.stopPropagation()}
           style={{ background: 'transparent', color: wallpaper.id === 'default' ? '#333' : wallpaper.textReceived }}
         />
 
