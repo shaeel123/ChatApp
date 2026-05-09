@@ -577,3 +577,9 @@
     bottom: -44px;
   }
 }
+/* iOS keyboard fix */
+@supports (height: 100dvh) {
+  .chat-box {
+    height: 100dvh;
+  }
+}

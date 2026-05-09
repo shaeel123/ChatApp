@@ -1,6 +1,6 @@
 .chat {
   height: 100vh;
-  height: -webkit-fill-available;
+  height: 100dvh; /* ✅ dynamic viewport height — accounts for iOS keyboard */
   display: flex;
   flex-direction: column;
   position: relative;
@@ -36,7 +36,6 @@
   overflow: hidden;
 }
 
-/* Hide the duplicate back btn in MiddleBox on mobile since Chat.jsx has its own */
 @media (max-width: 768px) {
   .back-btn-wrapper {
     display: none;
