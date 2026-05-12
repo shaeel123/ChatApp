@@ -11,7 +11,7 @@
 
 /* HEADER */
 .chat-user {
-  padding: 10px 15px;
+  padding: 14px 15px 14px 15px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -19,7 +19,7 @@
   flex-shrink: 0;
   background: white;
   z-index: 10;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08); 
+  box-shadow: none; 
 }
 
 .chat-user img {
@@ -133,7 +133,7 @@
   gap: 10px;
   padding: 10px 14px;
   background: white;
-  border-top: 1px solid #e0e0e0;
+  border-top: none;
   flex-shrink: 0;
   /* Pushes up when iOS keyboard appears */
   padding-bottom: max(10px, env(safe-area-inset-bottom));
