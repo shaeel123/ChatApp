@@ -31,14 +31,21 @@ export const AppContextProvider = ({ children }) => {
     if (error) { console.error("Error loading profile:", error); return }
     if (!profile) return
 
+    // ✅ Sync email: if auth email differs from profile email, update profiles table
+    if (authData.user.email && authData.user.email !== profile.email) {
+      await supabase
+        .from('profiles')
+        .update({ email: authData.user.email })
+        .eq('id', authData.user.id)
+      profile.email = authData.user.email
+    }
+
     if (profile.avatar_url) {
       profile.avatar_url = `${profile.avatar_url}?t=${Date.now()}`
     }
 
-    // Set online when profile loads
     await setOnlineStatus(authData.user.id, true)
 
-    console.log("Loaded profile:", profile)
     setUserData(profile)
   }
 
@@ -55,7 +62,6 @@ export const AppContextProvider = ({ children }) => {
 
     loadUserData()
 
-    // Set offline when tab/browser closes
     const handleBeforeUnload = async () => {
       const { data: authData } = await supabase.auth.getUser()
       if (authData?.user) {
