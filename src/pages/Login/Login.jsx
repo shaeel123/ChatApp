@@ -18,32 +18,6 @@ const Login = () => {
   const otpRefs = useRef([])
   const navigate = useNavigate()
 
-  const mobile = window.innerWidth <= 768
-
-  const mobileLogin = mobile ? {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '40px 20px',
-    gap: '30px'
-  } : {}
-
-  const mobileLogo = mobile ? { display: 'none' } : {}
-
-  const mobileForm = mobile ? {
-    width: '92vw',
-    maxWidth: '400px',
-    boxSizing: 'border-box',
-    padding: '24px 20px'
-  } : {}
-
-  const mobileInput = mobile ? {
-    width: '100%',
-    boxSizing: 'border-box',
-    fontSize: '16px',
-    padding: '12px 10px'
-  } : {}
-
   const handleOtpChange = (index, value) => {
     if (!/^\d*$/.test(value)) return
     const newOtp = [...otp]
@@ -73,14 +47,12 @@ const Login = () => {
     setLoading(true)
     try {
       if (currState === "Sign Up") {
-        // ✅ Sign up — send OTP for email verification
         localStorage.clear()
         const { error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
         toast.success("OTP sent to your email!")
         setShowOtp(true)
       } else {
-        // ✅ Login — just use password, no OTP needed
         const res = await login(email, password)
         if (!res) {
           const { data: profile } = await supabase
@@ -91,7 +63,7 @@ const Login = () => {
           toast.error(!profile ? "No user found with this email." : "Invalid email or password. Please try again.")
           return
         }
-        navigate('/chat')  // ✅ go straight to chat
+        navigate('/chat')
       }
     } catch (err) {
       toast.error(err.message || "Something went wrong. Please try again.")
@@ -108,7 +80,7 @@ const Login = () => {
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token: otpCode,
-        type: 'signup',  // ✅ always signup type since OTP only used for Sign Up
+        type: 'signup',
       })
       if (error) throw error
       if (data?.user) {
@@ -132,7 +104,7 @@ const Login = () => {
 
   const handleResendOtp = async () => {
     try {
-      const { error } = await supabase.auth.resend({ type: 'signup', email })  // ✅ always signup
+      const { error } = await supabase.auth.resend({ type: 'signup', email })
       if (error) throw error
       toast.success("OTP resent!")
       setOtp(['', '', '', '', '', ''])
@@ -144,9 +116,9 @@ const Login = () => {
 
   if (showOtp) {
     return (
-      <div className='login' style={mobileLogin}>
-        <img src={assets.logo_big} alt="" className="logo" style={mobileLogo} />
-        <div className="login-form otp-form" style={mobileForm}>
+      <div className='login'>
+        <img src={assets.logo_big} alt="" className="logo" />
+        <div className="login-form otp-form">
           <h2>Verify Email</h2>
           <p className="otp-subtitle">
             Enter the 6-digit OTP sent to<br />
@@ -187,10 +159,10 @@ const Login = () => {
   }
 
   return (
-    <div className='login' style={mobileLogin}>
-      <img src={assets.logo_big} alt="" className="logo" style={mobileLogo} />
+    <div className='login'>
+      <img src={assets.logo_big} alt="" className="logo" />
 
-      <form className="login-form" onSubmit={handleSubmit} style={mobileForm}>
+      <form className="login-form" onSubmit={handleSubmit}>
         <h2>{currState}</h2>
 
         {currState === "Sign Up" && (
@@ -198,7 +170,7 @@ const Login = () => {
             id="username" name="username" type="text" placeholder="username"
             className="form-input" value={username}
             onChange={(e) => setUsername(e.target.value)}
-            style={mobileInput} required
+            required
           />
         )}
 
@@ -206,14 +178,14 @@ const Login = () => {
           id="email" name="email" type="email" placeholder="Email address"
           className="form-input" value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={mobileInput} required
+          required
         />
 
         <input
           id="password" name="password" type="password" placeholder="password"
           className="form-input" value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={mobileInput} required
+          required
         />
 
         <button type='submit' disabled={loading}>
