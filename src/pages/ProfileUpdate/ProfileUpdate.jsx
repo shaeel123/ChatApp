@@ -10,6 +10,9 @@ const ProfileUpdate = () => {
   const [image, setImage] = useState(false)
   const [name, setName] = useState("")
   const [bio, setBio] = useState("")
+  const [newEmail, setNewEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [changingEmail, setChangingEmail] = useState(false)
   const navigate = useNavigate()
   const { loadUserData, userData } = useAppContext()
 
@@ -17,6 +20,7 @@ const ProfileUpdate = () => {
     if (userData) {
       setName(userData.name || "")
       setBio(userData.bio || "")
+      setPhone(userData.phone || "")
     }
   }, [userData])
 
@@ -50,30 +54,40 @@ const ProfileUpdate = () => {
     await loadUserData()
   }
 
-  // ✅ Remove profile image
   const handleRemoveImage = async () => {
     const { data: authData } = await supabase.auth.getUser()
     const user = authData.user
     if (!user) return
 
-    // Delete from storage
     const filePath = `${user.id}/avatar.png`
     await supabase.storage.from('avatars').remove([filePath])
 
-    // Set avatar_url to null in DB
     const { error } = await supabase.from('profiles').upsert({
       id: user.id,
       avatar_url: null,
     })
 
-    if (error) {
-      toast.error("Failed to remove image.")
-      return
-    }
+    if (error) { toast.error("Failed to remove image."); return }
 
     setImage(false)
     await loadUserData()
     toast.success("Profile image removed.")
+  }
+
+  // ✅ Change email
+  const handleChangeEmail = async () => {
+    if (!newEmail.trim()) { toast.error("Please enter a new email."); return }
+    setChangingEmail(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ email: newEmail })
+      if (error) throw error
+      toast.success("Confirmation sent to your new email. Please check your inbox.")
+      setNewEmail("")
+    } catch (err) {
+      toast.error(err.message || "Failed to update email.")
+    } finally {
+      setChangingEmail(false)
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -87,12 +101,10 @@ const ProfileUpdate = () => {
       id: user.id,
       name,
       bio,
+      phone,  // ✅ save phone
     })
 
-    if (error) {
-      toast.error("Failed to save profile!")
-      return
-    }
+    if (error) { toast.error("Failed to save profile!"); return }
 
     await loadUserData()
     toast.success("Profile saved! Enjoy your chatting.")
@@ -126,13 +138,12 @@ const ProfileUpdate = () => {
             Upload Profile Image
           </label>
 
-          {/* ✅ Remove button — only shows when avatar exists */}
           {(image || userData?.avatar_url) && (
             <button
               type="button"
               onClick={handleRemoveImage}
               style={{
-                marginTop: '8px',
+                marginTop: '4px',
                 background: 'none',
                 border: '1px solid #ff4d4d',
                 color: '#ff4d4d',
@@ -153,6 +164,7 @@ const ProfileUpdate = () => {
             onChange={(e) => setName(e.target.value)}
             required
           />
+
           <textarea
             placeholder='Write profile bio'
             value={bio}
@@ -160,14 +172,40 @@ const ProfileUpdate = () => {
             required
           />
 
+          {/* ✅ Phone number */}
+          <input
+            type="tel"
+            placeholder='Phone number (for recovery)'
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+
+          {/* ✅ Change email section */}
+          <div className="change-email-section">
+            <p className="section-label">Change Email</p>
+            <div className="email-row">
+              <input
+                type="email"
+                placeholder='Enter new email address'
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={handleChangeEmail}
+                disabled={changingEmail}
+                className="email-change-btn"
+              >
+                {changingEmail ? 'Sending...' : 'Update'}
+              </button>
+            </div>
+            <small className="email-note">A confirmation link will be sent to your new email.</small>
+          </div>
+
           <button type='submit'>Save</button>
         </form>
 
-        <img
-          className='profile-pic'
-          src={currentAvatar}
-          alt=""
-        />
+        <img className='profile-pic' src={currentAvatar} alt="" />
       </div>
     </div>
   )
