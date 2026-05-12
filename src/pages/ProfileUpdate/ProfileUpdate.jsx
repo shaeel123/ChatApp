@@ -199,7 +199,7 @@ const ProfileUpdate = () => {
                 {changingEmail ? 'Sending...' : 'Update'}
               </button>
             </div>
-            <small className="email-note">A confirmation link will be sent to your new email.</small>
+            <small className="email-note">A confirmation link will be sent to your new email. Click it to complete the change. After confirming, use your new email to log in.</small>
           </div>
 
           <button type='submit'>Save</button>
