@@ -15,7 +15,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid #c6c6c6;
   flex-shrink: 0;
   background: white;
   z-index: 10;
@@ -508,12 +508,7 @@
 .msg-context-menu button:hover { background: #f0f0f0; }
 .msg-context-menu button:last-child:hover { background: #ffe0e0; color: #d00; }
 
-/* Mobile */
-@media (max-width: 768px) {
-  .chat-box {
-    height: 100%;
-    height: -webkit-fill-available;
-  }
+
 
   .chat-user p {
     font-size: 15px;
@@ -575,10 +570,4 @@
   .msg-context-menu {
     bottom: -44px;
   }
-}
-/* iOS keyboard fix */
-@supports (height: 100dvh) {
-  .chat-box {
-    height: 100dvh;
-  }
-}
+
