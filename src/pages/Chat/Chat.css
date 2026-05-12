@@ -8,14 +8,11 @@
 
 .chat-container {
   display: flex;
-  width: 1100px;
-  height: 575px;
+  width: min(1100px, 98vw);
+  height: min(575px, 95vh);
   border-radius: 10px;
   overflow: hidden;
   background: white;
-  /* ✅ prevent shrinking below fixed size */
-  min-width: 1100px;
-  min-height: 575px;
   flex-shrink: 0;
 }
 
@@ -44,6 +41,13 @@
   transform: scale(1.05);
 }
 
+/* ✅ All three panels equal width */
+.ls {
+  flex: 1 !important;
+  min-width: 0 !important;
+  width: 0 !important;
+}
+
 .chat-box {
   flex: 1;
   min-width: 0;
@@ -51,7 +55,7 @@
 }
 
 .rs {
-  width: 300px;
-  min-width: 300px;
-  flex-shrink: 0;
+  flex: 1 !important;
+  min-width: 0 !important;
+  width: 0 !important;
 }
