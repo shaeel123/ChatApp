@@ -24,6 +24,20 @@ const ProfileUpdate = () => {
     }
   }, [userData])
 
+  // ✅ When Supabase confirms email change, sync new email to profiles table
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'USER_UPDATED' && session?.user?.email) {
+        await supabase.from('profiles').update({
+          email: session.user.email
+        }).eq('id', session.user.id)
+        await loadUserData()
+        toast.success('Email updated successfully!')
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
   const uploadAvatar = async (file) => {
     const { data: authData } = await supabase.auth.getUser()
     const user = authData.user
@@ -74,14 +88,13 @@ const ProfileUpdate = () => {
     toast.success("Profile image removed.")
   }
 
-  // ✅ Change email
   const handleChangeEmail = async () => {
     if (!newEmail.trim()) { toast.error("Please enter a new email."); return }
     setChangingEmail(true)
     try {
       const { error } = await supabase.auth.updateUser({ email: newEmail })
       if (error) throw error
-      toast.success("Confirmation sent to your new email. Please check your inbox.")
+      toast.success("Confirmation link sent to your new email. Click it to complete the change.")
       setNewEmail("")
     } catch (err) {
       toast.error(err.message || "Failed to update email.")
@@ -101,7 +114,7 @@ const ProfileUpdate = () => {
       id: user.id,
       name,
       bio,
-      phone,  // ✅ save phone
+      phone,
     })
 
     if (error) { toast.error("Failed to save profile!"); return }
@@ -172,7 +185,6 @@ const ProfileUpdate = () => {
             required
           />
 
-          {/* ✅ Phone number */}
           <input
             type="tel"
             placeholder='Phone number (for recovery)'
@@ -180,7 +192,6 @@ const ProfileUpdate = () => {
             onChange={(e) => setPhone(e.target.value)}
           />
 
-          {/* ✅ Change email section */}
           <div className="change-email-section">
             <p className="section-label">Change Email</p>
             <div className="email-row">
@@ -199,7 +210,9 @@ const ProfileUpdate = () => {
                 {changingEmail ? 'Sending...' : 'Update'}
               </button>
             </div>
-            <small className="email-note">A confirmation link will be sent to your new email. Click it to complete the change. After confirming, use your new email to log in.</small>
+            <small className="email-note">
+              A confirmation link will be sent to your new email. Click it to complete the change. After confirming, use your new email to log in.
+            </small>
           </div>
 
           <button type='submit'>Save</button>
