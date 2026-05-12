@@ -13,6 +13,10 @@
   border-radius: 10px;
   overflow: hidden;
   background: white;
+  /* ✅ prevent shrinking below fixed size */
+  min-width: 1100px;
+  min-height: 575px;
+  flex-shrink: 0;
 }
 
 .home-btn {
