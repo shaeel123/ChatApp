@@ -64,3 +64,11 @@ span {
 .otp-verify-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 .otp-resend { font-size: 13px; color: #666; margin-bottom: 12px; }
 .otp-back { font-size: 13px; color: #077eff; cursor: pointer; margin-top: 8px; }
+
+.forgot-link {
+    font-size: 13px;
+    color: #077eff;
+    cursor: pointer;
+    margin-top: 4px;
+    text-decoration: underline;
+}

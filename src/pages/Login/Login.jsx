@@ -13,6 +13,9 @@ const Login = () => {
   const [agreed, setAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showOtp, setShowOtp] = useState(false)
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotLoading, setForgotLoading] = useState(false)
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [verifying, setVerifying] = useState(false)
   const otpRefs = useRef([])
@@ -38,6 +41,25 @@ const Login = () => {
     if (pasted.length === 6) {
       setOtp(pasted.split(''))
       otpRefs.current[5]?.focus()
+    }
+  }
+
+  // ✅ Forgot password — send reset link to email
+  const handleForgotPassword = async () => {
+    if (!forgotEmail.trim()) { toast.error("Please enter your email."); return }
+    setForgotLoading(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      if (error) throw error
+      toast.success("Password reset link sent! Check your email.")
+      setForgotEmail('')
+      setShowForgot(false)
+    } catch (err) {
+      toast.error(err.message || "Failed to send reset link.")
+    } finally {
+      setForgotLoading(false)
     }
   }
 
@@ -78,17 +100,12 @@ const Login = () => {
     setVerifying(true)
     try {
       const { data, error } = await supabase.auth.verifyOtp({
-        email,
-        token: otpCode,
-        type: 'signup',
+        email, token: otpCode, type: 'signup',
       })
       if (error) throw error
       if (data?.user) {
         await supabase.from('profiles').upsert({
-          id: data.user.id,
-          email,
-          name: username,
-          avatar_url: null
+          id: data.user.id, email, name: username, avatar_url: null
         })
       }
       toast.success("Email verified successfully!")
@@ -114,6 +131,42 @@ const Login = () => {
     }
   }
 
+  // ✅ Forgot password screen
+  if (showForgot) {
+    return (
+      <div className='login'>
+        <img src={assets.logo_big} alt="" className="logo" />
+        <div className="login-form otp-form">
+          <h2>Reset Password</h2>
+          <p className="otp-subtitle">
+            Enter your email and we'll send you a password reset link.
+          </p>
+          <input
+            type="email"
+            placeholder="Your email address"
+            className="form-input"
+            value={forgotEmail}
+            onChange={(e) => setForgotEmail(e.target.value)}
+          />
+          <button
+            onClick={handleForgotPassword}
+            disabled={forgotLoading}
+            className="otp-verify-btn"
+          >
+            {forgotLoading ? 'Sending...' : 'Send Reset Link'}
+          </button>
+          <p
+            className="otp-back"
+            onClick={() => { setShowForgot(false); setForgotEmail('') }}
+          >
+            ← Back to Login
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // ✅ OTP screen
   if (showOtp) {
     return (
       <div className='login'>
@@ -209,10 +262,16 @@ const Login = () => {
               <span onClick={() => setCurrState("Login")}>Login here</span>
             </p>
           ) : (
-            <p className="login-toggle">
-              Create an account{" "}
-              <span onClick={() => setCurrState("Sign Up")}>Click here</span>
-            </p>
+            <>
+              <p className="login-toggle">
+                Create an account{" "}
+                <span onClick={() => setCurrState("Sign Up")}>Click here</span>
+              </p>
+              {/* ✅ Forgot password link */}
+              <p className="forgot-link" onClick={() => setShowForgot(true)}>
+                Forgot password?
+              </p>
+            </>
           )}
         </div>
       </form>
