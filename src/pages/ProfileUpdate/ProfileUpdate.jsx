@@ -207,7 +207,7 @@ const ProfileUpdate = () => {
                 disabled={changingEmail}
                 className="email-change-btn"
               >
-                {changingEmail ? 'Sending...' : 'Update'}
+                {changingEmail ? 'Sent...' : 'Update'}
               </button>
             </div>
             <small className="email-note">
