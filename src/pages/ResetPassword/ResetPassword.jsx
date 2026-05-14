@@ -44,9 +44,9 @@ const ResetPassword = () => {
     
     // ✅ sign out and navigate after toast shows
     setTimeout(async () => {
-      await supabase.auth.signOut()
-      navigate('/')
-    }, 2000)
+  await supabase.auth.signOut()
+  window.location.href = '/'  // ✅ force full page redirect instead of navigate
+}, 2000)
 
   } catch (err) {
     toast.error(err.message || "Failed to reset password.")
