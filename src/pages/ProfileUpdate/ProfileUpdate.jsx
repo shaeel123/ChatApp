@@ -139,7 +139,7 @@ const ProfileUpdate = () => {
       position: 'absolute',
       top: '16px',
       right: '16px',
-      background: '#077eff',
+      background: '#df1637',
       color: 'white',
       border: 'none',
       borderRadius: '8px',
@@ -150,6 +150,7 @@ const ProfileUpdate = () => {
   >
     ← Back to Chat
   </button>
+
         <form onSubmit={handleSubmit}>
           <h3>Profile Details</h3>
 
