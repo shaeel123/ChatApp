@@ -134,6 +134,7 @@
         width: 100%;
         max-width: 420px;
         margin: auto;
+        position: relative;
     }
 
     .profile-pic {

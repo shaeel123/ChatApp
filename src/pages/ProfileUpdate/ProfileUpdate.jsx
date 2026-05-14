@@ -131,6 +131,25 @@ const ProfileUpdate = () => {
   return (
     <div className='profile'>
       <div className="profile-container">
+        {/* ✅ Back to chat button */}
+  <button
+    type="button"
+    onClick={() => navigate('/chat')}
+    style={{
+      position: 'absolute',
+      top: '16px',
+      right: '16px',
+      background: '#077eff',
+      color: 'white',
+      border: 'none',
+      borderRadius: '8px',
+      padding: '6px 14px',
+      cursor: 'pointer',
+      fontSize: '13px',
+    }}
+  >
+    ← Back to Chat
+  </button>
         <form onSubmit={handleSubmit}>
           <h3>Profile Details</h3>
 
