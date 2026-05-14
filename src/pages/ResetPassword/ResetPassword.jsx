@@ -13,46 +13,38 @@ const ResetPassword = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-  // ✅ listen for PASSWORD_RECOVERY event from Supabase
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
-      setReady(true)
-    } else if (session) {
-      setReady(true)
-    }
-  })
-
-  // ✅ also check existing session immediately
-  supabase.auth.getSession().then(({ data }) => {
-    if (data?.session) setReady(true)
-  })
-
-  return () => subscription.unsubscribe()
-}, [])
+    // ✅ Listen for PASSWORD_RECOVERY event — fires when token in URL is valid
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth event:", event, session)
+      if (event === 'PASSWORD_RECOVERY') {
+        setReady(true)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   const handleReset = async (e) => {
-  e.preventDefault()
-  if (password !== confirm) { toast.error("Passwords don't match."); return }
-  if (password.length < 6) { toast.error("Password must be at least 6 characters."); return }
+    e.preventDefault()
+    if (password !== confirm) { toast.error("Passwords don't match."); return }
+    if (password.length < 6) { toast.error("Password must be at least 6 characters."); return }
 
-  setLoading(true)
-  try {
-    const { error } = await supabase.auth.updateUser({ password })
-    if (error) throw error
+    setLoading(true)
+    try {
+      const { data, error } = await supabase.auth.updateUser({ password })
+      console.log("updateUser result:", data, error)
+      if (error) throw error
 
-    toast.success("Password reset successfully! Redirecting to login...")
-    
-    // ✅ sign out and navigate after toast shows
-    setTimeout(async () => {
-  await supabase.auth.signOut()
-  window.location.href = '/'  // ✅ force full page redirect instead of navigate
-}, 2000)
-
-  } catch (err) {
-    toast.error(err.message || "Failed to reset password.")
-    setLoading(false)
+      toast.success("Password reset successfully! Redirecting to login...")
+      setTimeout(async () => {
+        await supabase.auth.signOut()
+        window.location.href = '/'
+      }, 2000)
+    } catch (err) {
+      console.error("Reset error:", err)
+      toast.error(err.message || "Failed to reset password.")
+      setLoading(false)
+    }
   }
-}
 
   return (
     <div className='reset-password'>
@@ -60,7 +52,9 @@ const ResetPassword = () => {
       <form className="login-form" onSubmit={handleReset}>
         <h2>Set New Password</h2>
         {!ready ? (
-          <p style={{ color: 'gray', fontSize: '14px' }}>Verifying reset link...</p>
+          <p style={{ color: 'gray', fontSize: '14px' }}>
+            Waiting for reset link verification...
+          </p>
         ) : (
           <>
             <input
