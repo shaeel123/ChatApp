@@ -56,6 +56,7 @@ export const AppContextProvider = ({ children }) => {
 
   if (session?.user) {
     await setOnlineStatus(session.user.id, true)
+    setChatUser(null)
     loadUserData()
   } else {
     setUserData(null)
