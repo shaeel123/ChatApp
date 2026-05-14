@@ -24,27 +24,26 @@ const ResetPassword = () => {
   }, [])
 
   const handleReset = async (e) => {
-    e.preventDefault()
-    if (password !== confirm) { toast.error("Passwords don't match."); return }
-    if (password.length < 6) { toast.error("Password must be at least 6 characters."); return }
+  e.preventDefault()
+  if (password !== confirm) { toast.error("Passwords don't match."); return }
+  if (password.length < 6) { toast.error("Password must be at least 6 characters."); return }
 
-    setLoading(true)
-    try {
-      const { data, error } = await supabase.auth.updateUser({ password })
-      console.log("updateUser result:", data, error)
-      if (error) throw error
+  setLoading(true)
+  try {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
 
-      toast.success("Password reset successfully! Redirecting to login...")
-      setTimeout(async () => {
-        await supabase.auth.signOut()
-        window.location.href = '/'
-      }, 2000)
-    } catch (err) {
-      console.error("Reset error:", err)
-      toast.error(err.message || "Failed to reset password.")
-      setLoading(false)
-    }
+    await supabase.auth.signOut()
+    toast.success("Password reset successfully!")
+    
+    // ✅ force redirect immediately
+    window.location.replace('/')
+
+  } catch (err) {
+    toast.error(err.message || "Failed to reset password.")
+    setLoading(false)
   }
+}
 
   return (
     <div className='reset-password'>
