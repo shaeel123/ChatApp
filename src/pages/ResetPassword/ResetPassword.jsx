@@ -13,12 +13,22 @@ const ResetPassword = () => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // ✅ Supabase puts the token in the URL hash — check session is valid
-    supabase.auth.getSession().then(({ data }) => {
-      if (data?.session) setReady(true)
-      else toast.error("Invalid or expired reset link.")
-    })
-  }, [])
+  // ✅ listen for PASSWORD_RECOVERY event from Supabase
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      setReady(true)
+    } else if (session) {
+      setReady(true)
+    }
+  })
+
+  // ✅ also check existing session immediately
+  supabase.auth.getSession().then(({ data }) => {
+    if (data?.session) setReady(true)
+  })
+
+  return () => subscription.unsubscribe()
+}, [])
 
   const handleReset = async (e) => {
   e.preventDefault()
