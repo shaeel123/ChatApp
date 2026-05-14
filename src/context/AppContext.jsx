@@ -51,14 +51,17 @@ export const AppContextProvider = ({ children }) => {
 
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        await setOnlineStatus(session.user.id, true)
-        loadUserData()
-      } else {
-        setUserData(null)
-        setChatUser(null)
-      }
-    })
+  // ✅ don't interfere on reset password page
+  if (window.location.pathname === '/reset-password') return
+
+  if (session?.user) {
+    await setOnlineStatus(session.user.id, true)
+    loadUserData()
+  } else {
+    setUserData(null)
+    setChatUser(null)
+  }
+})
 
     loadUserData()
 
