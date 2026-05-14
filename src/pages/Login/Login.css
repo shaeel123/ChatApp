@@ -66,9 +66,10 @@ span {
 .otp-back { font-size: 13px; color: #077eff; cursor: pointer; margin-top: 8px; }
 
 .forgot-link {
-    font-size: 13px;
-    color: #077eff;
+    font-size: 14px;
+    color: red;
     cursor: pointer;
     margin-top: 4px;
-    text-decoration: underline;
+    text-align: center;
+    display: block;
 }
