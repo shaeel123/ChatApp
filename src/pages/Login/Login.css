@@ -73,3 +73,23 @@ span {
     text-align: center;
     display: block;
 }
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper .form-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 36px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 14px;
+    user-select: none;
+}
