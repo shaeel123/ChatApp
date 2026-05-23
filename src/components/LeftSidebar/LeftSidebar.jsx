@@ -17,15 +17,27 @@ const LeftSidebar = () => {
   const [showMenu, setShowMenu] = useState(false)
   const [conversations, setConversations] = useState([])
   const channelRef = useRef(null)
+  const clearChannelRef = useRef(null)
 
   const fetchConversations = async () => {
     if (!userData?.id) return
 
+    // ✅ Get this user's clear timestamps
+    let clearMap = {}
+    try {
+      const { data: clearData } = await supabase
+        .from('chat_clears')
+        .select('other_user_id, cleared_at')
+        .eq('user_id', userData.id)
+      if (clearData) clearData.forEach(c => { clearMap[c.other_user_id] = c.cleared_at })
+    } catch (_) {}
+
+    // ✅ Use inserted_at (not created_at) for ordering
     const { data: msgs, error } = await supabase
       .from('messages')
       .select('*')
       .or(`user_id.eq.${userData.id},receiver_id.eq.${userData.id}`)
-      .order('created_at', { ascending: false })
+      .order('inserted_at', { ascending: false })
 
     if (error || !msgs) return
 
@@ -33,6 +45,11 @@ const LeftSidebar = () => {
     for (const msg of msgs) {
       const otherId = msg.user_id === userData.id ? msg.receiver_id : msg.user_id
       if (!otherId) continue
+
+      // ✅ Respect chat_clears — skip messages before cleared_at
+      const clearedAt = clearMap[otherId] || null
+      if (clearedAt && new Date(msg.inserted_at) <= new Date(clearedAt)) continue
+
       if (!convMap[otherId]) {
         convMap[otherId] = { otherId, latestMsg: msg, unread: 0 }
       }
@@ -56,7 +73,8 @@ const LeftSidebar = () => {
       latestMsg: convMap[profile.id]?.latestMsg,
       unread: convMap[profile.id]?.unread || 0,
     })).sort((a, b) =>
-      new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0)
+      // ✅ Sort by inserted_at (not created_at)
+      new Date(b.latestMsg?.inserted_at || 0) - new Date(a.latestMsg?.inserted_at || 0)
     )
 
     setConversations(result)
@@ -66,8 +84,8 @@ const LeftSidebar = () => {
     if (!userData?.id) return
     fetchConversations()
 
+    // Realtime: new messages
     if (channelRef.current) supabase.removeChannel(channelRef.current)
-
     channelRef.current = supabase
       .channel(`sidebar-${userData.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
@@ -80,33 +98,38 @@ const LeftSidebar = () => {
       )
       .subscribe()
 
+    // ✅ Realtime: chat_clears changes (so sidebar updates instantly after clear)
+    if (clearChannelRef.current) supabase.removeChannel(clearChannelRef.current)
+    clearChannelRef.current = supabase
+      .channel(`sidebar-clears-${userData.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_clears' },
+        () => fetchConversations()
+      )
+      .subscribe()
+
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current)
+      if (clearChannelRef.current) supabase.removeChannel(clearChannelRef.current)
     }
   }, [userData?.id])
 
- const handleSelectConversation = async (user) => {
-  setChatUser(user)
+  const handleSelectConversation = async (user) => {
+    setChatUser(user)
 
-  // ✅ Clear badge immediately in UI
-  setConversations(prev =>
-    prev.map(c => c.id === user.id ? { ...c, unread: 0 } : c)
-  )
-
-  // ✅ Mark as read in DB
-  const { error } = await supabase
-    .from('messages')
-    .update({ is_read: true })
-    .eq('receiver_id', userData.id)
-    .eq('user_id', user.id)
-    .eq('is_read', false)
-
-  if (error) console.error('Mark read error:', error)
-
-
+    // Clear badge immediately in UI
     setConversations(prev =>
       prev.map(c => c.id === user.id ? { ...c, unread: 0 } : c)
     )
+
+    // Mark as read in DB
+    const { error } = await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('receiver_id', userData.id)
+      .eq('user_id', user.id)
+      .eq('is_read', false)
+
+    if (error) console.error('Mark read error:', error)
   }
 
   const handleDeleteAccount = async () => {
@@ -155,6 +178,7 @@ const LeftSidebar = () => {
     setSearchResults(data)
   }
 
+  // ✅ Use inserted_at for time display
   const formatTime = (timestamp) => {
     if (!timestamp) return ''
     const date = new Date(timestamp + 'Z')
@@ -255,16 +279,19 @@ const LeftSidebar = () => {
                 </div>
 
                 <div className="friend-info">
-                  {/* Top: name only */}
                   <p className="friend-name">{user.name?.trim() || user.email || "Unnamed"}</p>
 
-                  {/* Bottom: message (left) + time + badge (right) */}
                   <div className="friend-bottom-row">
-                    <span className="friend-preview">{user.latestMsg?.image_url ? '📷 Image' : user.latestMsg?.video_url ? '🎥 Video' : truncate(user.latestMsg?.content)}
-                      
+                    <span className="friend-preview">
+                      {user.latestMsg?.image_url
+                        ? '📷 Image'
+                        : user.latestMsg?.video_url
+                        ? '🎥 Video'
+                        : truncate(user.latestMsg?.content)}
                     </span>
                     <div className="friend-meta">
-                      <span className="friend-time">{formatTime(user.latestMsg?.created_at)}</span>
+                      {/* ✅ Use inserted_at for time */}
+                      <span className="friend-time">{formatTime(user.latestMsg?.inserted_at)}</span>
                       {user.unread > 0 && (
                         <span className="unread-badge">{user.unread > 99 ? '99+' : user.unread}</span>
                       )}
@@ -282,6 +309,5 @@ const LeftSidebar = () => {
     </div>
   )
 }
-
 
 export default LeftSidebar
