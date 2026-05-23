@@ -19,100 +19,129 @@ const LeftSidebar = () => {
   const channelRef = useRef(null)
   const clearChannelRef = useRef(null)
 
- const fetchConversations = async () => {
-  if (!userData?.id) return
+  const fetchConversations = async () => {
+    // ✅ Get auth user directly — never rely on userData timing
+    const { data: authData } = await supabase.auth.getUser()
+    const myId = authData?.user?.id
+    console.log('🔍 myId:', myId)
+    if (!myId) return
 
-  // Get clear timestamps
-  let clearMap = {}
-  try {
-    const { data: clearData } = await supabase
-      .from('chat_clears')
-      .select('other_user_id, cleared_at')
-      .eq('user_id', userData.id)
-    if (clearData) clearData.forEach(c => { clearMap[c.other_user_id] = c.cleared_at })
-  } catch (_) {}
+    // Get clear timestamps
+    let clearMap = {}
+    try {
+      const { data: clearData } = await supabase
+        .from('chat_clears')
+        .select('other_user_id, cleared_at')
+        .eq('user_id', myId)
+      if (clearData) clearData.forEach(c => { clearMap[c.other_user_id] = c.cleared_at })
+    } catch (_) {}
 
-  // ✅ Two separate queries instead of complex or()
-  const { data: sent } = await supabase
-    .from('messages')
-    .select('*')
-    .eq('user_id', userData.id)
-    .order('created_at', { ascending: false })
+    const { data: sent, error: e1 } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('user_id', myId)
+      .order('created_at', { ascending: false })
 
-  const { data: received } = await supabase
-    .from('messages')
-    .select('*')
-    .eq('receiver_id', userData.id)
-    .order('created_at', { ascending: false })
+    const { data: received, error: e2 } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('receiver_id', myId)
+      .order('created_at', { ascending: false })
 
-  const msgs = [...(sent || []), ...(received || [])]
-  if (msgs.length === 0) { setConversations([]); return }
+    console.log('📤 sent:', sent?.length, 'e1:', e1?.message)
+    console.log('📥 received:', received?.length, 'e2:', e2?.message)
 
-  // Sort combined list by created_at descending
-  msgs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    const msgs = [...(sent || []), ...(received || [])]
+    console.log('📨 total msgs:', msgs.length)
+    if (msgs.length === 0) { setConversations([]); return }
 
-  const convMap = {}
-  for (const msg of msgs) {
-    const otherId = msg.user_id === userData.id ? msg.receiver_id : msg.user_id
-    if (!otherId) continue
+    msgs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
-    const clearedAt = clearMap[otherId] || null
-    if (clearedAt && new Date(msg.created_at) <= new Date(clearedAt)) continue
+    const convMap = {}
+    for (const msg of msgs) {
+      const otherId = msg.user_id === myId ? msg.receiver_id : msg.user_id
+      if (!otherId) continue
 
-    if (!convMap[otherId]) {
-      convMap[otherId] = { otherId, latestMsg: msg, unread: 0 }
+      const clearedAt = clearMap[otherId] || null
+      if (clearedAt && new Date(msg.created_at) <= new Date(clearedAt)) continue
+
+      if (!convMap[otherId]) {
+        convMap[otherId] = { otherId, latestMsg: msg, unread: 0 }
+      }
+      if (msg.receiver_id === myId && !msg.is_read) {
+        convMap[otherId].unread++
+      }
     }
-    if (msg.receiver_id === userData.id && !msg.is_read) {
-      convMap[otherId].unread++
-    }
+
+    const otherIds = Object.keys(convMap)
+    console.log('👥 otherIds:', otherIds)
+    if (otherIds.length === 0) { setConversations([]); return }
+
+    const { data: profiles, error: e3 } = await supabase
+      .from('profiles')
+      .select('id, name, avatar_url, email, bio, is_online')
+      .in('id', otherIds)
+
+    console.log('👤 profiles:', profiles?.length, 'e3:', e3?.message)
+    if (!profiles || profiles.length === 0) return
+
+    const result = profiles.map(profile => ({
+      ...profile,
+      latestMsg: convMap[profile.id]?.latestMsg,
+      unread: convMap[profile.id]?.unread || 0,
+    })).sort((a, b) =>
+      new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0)
+    )
+
+    console.log('✅ conversations set:', result.length)
+    setConversations(result)
   }
 
-  const otherIds = Object.keys(convMap)
-  if (otherIds.length === 0) { setConversations([]); return }
-
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, name, avatar_url, email, bio, is_online')
-    .in('id', otherIds)
-
-  if (!profiles) return
-
-  const result = profiles.map(profile => ({
-    ...profile,
-    latestMsg: convMap[profile.id]?.latestMsg,
-    unread: convMap[profile.id]?.unread || 0,
-  })).sort((a, b) =>
-    new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0)
-  )
-
-  setConversations(result)
-}
+  // ✅ Run on mount — catches already logged-in users
   useEffect(() => {
-    if (!userData?.id) return
     fetchConversations()
 
-    // Realtime: new messages
-    if (channelRef.current) supabase.removeChannel(channelRef.current)
-    channelRef.current = supabase
-      .channel(`sidebar-${userData.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
-          const msg = payload.new
-          if (msg.user_id === userData.id || msg.receiver_id === userData.id) {
-            fetchConversations()
-          }
-        }
-      )
-      .subscribe()
+    // ✅ Also re-run when auth state changes (fresh login)
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) fetchConversations()
+    })
 
-    // ✅ Realtime: chat_clears changes (so sidebar updates instantly after clear)
-    if (clearChannelRef.current) supabase.removeChannel(clearChannelRef.current)
-    clearChannelRef.current = supabase
-      .channel(`sidebar-clears-${userData.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_clears' },
-        () => fetchConversations()
-      )
-      .subscribe()
+    return () => authListener.subscription.unsubscribe()
+  }, [])
+
+  // ✅ Also re-run when userData loads (belt + suspenders)
+  useEffect(() => {
+    if (userData?.id) fetchConversations()
+  }, [userData?.id])
+
+  // ✅ Realtime subscriptions
+  useEffect(() => {
+    const setupRealtime = async () => {
+      const { data: authData } = await supabase.auth.getUser()
+      const myId = authData?.user?.id
+      if (!myId) return
+
+      if (channelRef.current) supabase.removeChannel(channelRef.current)
+      channelRef.current = supabase
+        .channel(`sidebar-msgs-${myId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' },
+          (payload) => {
+            const msg = payload.new
+            if (msg.user_id === myId || msg.receiver_id === myId) fetchConversations()
+          }
+        )
+        .subscribe()
+
+      if (clearChannelRef.current) supabase.removeChannel(clearChannelRef.current)
+      clearChannelRef.current = supabase
+        .channel(`sidebar-clears-${myId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_clears' },
+          () => fetchConversations()
+        )
+        .subscribe()
+    }
+
+    setupRealtime()
 
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current)
@@ -123,16 +152,18 @@ const LeftSidebar = () => {
   const handleSelectConversation = async (user) => {
     setChatUser(user)
 
-    // Clear badge immediately in UI
     setConversations(prev =>
       prev.map(c => c.id === user.id ? { ...c, unread: 0 } : c)
     )
 
-    // Mark as read in DB
+    const { data: authData } = await supabase.auth.getUser()
+    const myId = authData?.user?.id
+    if (!myId) return
+
     const { error } = await supabase
       .from('messages')
       .update({ is_read: true })
-      .eq('receiver_id', userData.id)
+      .eq('receiver_id', myId)
       .eq('user_id', user.id)
       .eq('is_read', false)
 
@@ -178,14 +209,13 @@ const LeftSidebar = () => {
       .from("profiles")
       .select("id, name, avatar_url, email, bio, is_online")
       .or(`name.ilike.%${value}%,email.ilike.%${value}%`)
-      .neq('id', userData.id)
+      .neq('id', userData?.id)
 
     setSearched(true)
     if (error || !data) { setSearchResults([]); return }
     setSearchResults(data)
   }
 
-  // ✅ Use inserted_at for time display
   const formatTime = (timestamp) => {
     if (!timestamp) return ''
     const date = new Date(timestamp + 'Z')
@@ -297,7 +327,6 @@ const LeftSidebar = () => {
                         : truncate(user.latestMsg?.content)}
                     </span>
                     <div className="friend-meta">
-                      {/* ✅ Use inserted_at for time */}
                       <span className="friend-time">{formatTime(user.latestMsg?.created_at)}</span>
                       {user.unread > 0 && (
                         <span className="unread-badge">{user.unread > 99 ? '99+' : user.unread}</span>
