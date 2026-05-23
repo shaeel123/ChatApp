@@ -29,10 +29,26 @@ const LeftSidebar = () => {
 
     if (error || !msgs) return
 
+    // ✅ Fetch this user's clear timestamps
+    const { data: clears } = await supabase
+      .from('chat_clears')
+      .select('other_user_id, cleared_at')
+      .eq('user_id', userData.id)
+
+    const clearMap = {}
+    if (clears) {
+      clears.forEach(c => { clearMap[c.other_user_id] = c.cleared_at })
+    }
+
     const convMap = {}
     for (const msg of msgs) {
       const otherId = msg.user_id === userData.id ? msg.receiver_id : msg.user_id
       if (!otherId) continue
+
+      // ✅ Skip messages before this user's clear timestamp for this conversation
+      const clearedAt = clearMap[otherId]
+      if (clearedAt && new Date(msg.created_at) <= new Date(clearedAt)) continue
+
       if (!convMap[otherId]) {
         convMap[otherId] = { otherId, latestMsg: msg, unread: 0 }
       }
@@ -78,6 +94,9 @@ const LeftSidebar = () => {
           }
         }
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_clears' },
+        () => { fetchConversations() }
+      )
       .subscribe()
 
     return () => {
@@ -85,24 +104,21 @@ const LeftSidebar = () => {
     }
   }, [userData?.id])
 
- const handleSelectConversation = async (user) => {
-  setChatUser(user)
+  const handleSelectConversation = async (user) => {
+    setChatUser(user)
 
-  // ✅ Clear badge immediately in UI
-  setConversations(prev =>
-    prev.map(c => c.id === user.id ? { ...c, unread: 0 } : c)
-  )
+    setConversations(prev =>
+      prev.map(c => c.id === user.id ? { ...c, unread: 0 } : c)
+    )
 
-  // ✅ Mark as read in DB
-  const { error } = await supabase
-    .from('messages')
-    .update({ is_read: true })
-    .eq('receiver_id', userData.id)
-    .eq('user_id', user.id)
-    .eq('is_read', false)
+    const { error } = await supabase
+      .from('messages')
+      .update({ is_read: true })
+      .eq('receiver_id', userData.id)
+      .eq('user_id', user.id)
+      .eq('is_read', false)
 
-  if (error) console.error('Mark read error:', error)
-
+    if (error) console.error('Mark read error:', error)
 
     setConversations(prev =>
       prev.map(c => c.id === user.id ? { ...c, unread: 0 } : c)
@@ -255,13 +271,10 @@ const LeftSidebar = () => {
                 </div>
 
                 <div className="friend-info">
-                  {/* Top: name only */}
                   <p className="friend-name">{user.name?.trim() || user.email || "Unnamed"}</p>
-
-                  {/* Bottom: message (left) + time + badge (right) */}
                   <div className="friend-bottom-row">
-                    <span className="friend-preview">{user.latestMsg?.image_url ? '📷 Image' : user.latestMsg?.video_url ? '🎥 Video' : truncate(user.latestMsg?.content)}
-                      
+                    <span className="friend-preview">
+                      {user.latestMsg?.image_url ? '📷 Image' : user.latestMsg?.video_url ? '🎥 Video' : truncate(user.latestMsg?.content)}
                     </span>
                     <div className="friend-meta">
                       <span className="friend-time">{formatTime(user.latestMsg?.created_at)}</span>
@@ -282,6 +295,5 @@ const LeftSidebar = () => {
     </div>
   )
 }
-
 
 export default LeftSidebar
