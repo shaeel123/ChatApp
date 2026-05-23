@@ -63,7 +63,7 @@ const LeftSidebar = () => {
       if (!otherId) continue
 
       const clearedAt = clearMap[otherId] || null
-      if (clearedAt && new Date(msg.created_at) <= new Date(clearedAt)) continue
+      if (clearedAt && new Date(msg.created_at + 'Z') <= new Date(clearedAt)) continue
 
       if (!convMap[otherId]) {
         convMap[otherId] = { otherId, latestMsg: msg, unread: 0 }
