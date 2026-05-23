@@ -40,6 +40,8 @@ const MiddleBox = () => {
   const [hoveredMsgId, setHoveredMsgId] = useState(null)
   const [stagedFile, setStagedFile] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [clearing, setClearing] = useState(false)
 
   const messagesEndRef = useRef(null)
   const chatMsgRef = useRef(null)
@@ -162,7 +164,6 @@ const MiddleBox = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // ✅ Reset file inputs via refs — no re-mounting, no broken labels
   const resetFileInputs = () => {
     if (imageInputRef.current) imageInputRef.current.value = ''
     if (videoInputRef.current) videoInputRef.current.value = ''
@@ -190,12 +191,9 @@ const MiddleBox = () => {
       alert('Video is too large. Please upload a video under 50MB.')
       return
     }
-    // ✅ Revoke previous preview URL before creating a new one
     if (stagedFile?.previewUrl) URL.revokeObjectURL(stagedFile.previewUrl)
-
     const { data: sessionData } = await supabase.auth.getSession()
     tokenRef.current = sessionData?.session?.access_token || null
-
     const previewUrl = URL.createObjectURL(file)
     setStagedFile({ file, type, previewUrl })
   }
@@ -209,9 +207,9 @@ const MiddleBox = () => {
     const { file, type, previewUrl } = stagedFile
 
     const { data: freshSession } = await supabase.auth.getSession()
-const token = freshSession?.session?.access_token || tokenRef.current
-tokenRef.current = token
-if (!token) { setUploading(false); return }
+    const token = freshSession?.session?.access_token || tokenRef.current
+    tokenRef.current = token
+    if (!token) { setUploading(false); return }
 
     const filePath = `${cu.id}/messages/${Date.now()}_${file.name}`
     const uploadUrl = `${SUPABASE_URL}/storage/v1/object/avatars/${filePath}`
@@ -269,7 +267,6 @@ if (!token) { setUploading(false); return }
       console.error('Insert error:', err)
     }
 
-    // ✅ Cleanup: revoke URL, clear state, reset inputs
     URL.revokeObjectURL(previewUrl)
     setStagedFile(null)
     resetFileInputs()
@@ -295,6 +292,39 @@ if (!token) { setUploading(false); return }
     if (!res.ok) { console.error('Delete failed:', await res.text()); return }
     setMessages((prev) => prev.filter(m => m.id !== msgId))
     setHoveredMsgId(null)
+  }
+
+  // ✅ Clear chat — deletes only YOUR sent messages
+  const clearChat = async () => {
+    const cu = await getCurrentUser()
+    if (!cu || !chatUser) return
+    setClearing(true)
+
+    const { data: freshSession } = await supabase.auth.getSession()
+    const token = freshSession?.session?.access_token || tokenRef.current
+    if (!token) { setClearing(false); return }
+
+    // Delete all messages sent by me to this user
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/messages?user_id=eq.${cu.id}&receiver_id=eq.${chatUser.id}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`,
+        }
+      }
+    )
+
+    if (res.ok) {
+      // Remove my messages from local state
+      setMessages(prev => prev.filter(m => m.user_id !== cu.id))
+    } else {
+      console.error('Clear chat failed:', await res.text())
+    }
+
+    setClearing(false)
+    setShowClearConfirm(false)
   }
 
   const copyMessage = (text) => {
@@ -358,6 +388,15 @@ if (!token) { setUploading(false); return }
           {chatUser?.is_online && <img className='dot' src={assets.green_dot} alt="" />}
         </p>
 
+        {/* ✅ Clear Chat Button */}
+        <span
+          title="Clear my messages"
+          onClick={() => setShowClearConfirm(true)}
+          style={{ cursor: 'pointer', fontSize: '18px', marginRight: '4px' }}
+        >
+          🗑️
+        </span>
+
         <div className="wallpaper-btn-wrapper">
           <span className="wallpaper-btn" title="Change theme" onClick={() => setShowWallpaperPicker((prev) => !prev)}>🎨</span>
           {showWallpaperPicker && (
@@ -392,6 +431,44 @@ if (!token) { setUploading(false); return }
           <span className="back-tooltip">Go back to search users</span>
         </div>
       </div>
+
+      {/* ✅ Clear Chat Confirmation Dialog */}
+      {showClearConfirm && ReactDOM.createPortal(
+        <div className="img-preview-overlay" onClick={() => setShowClearConfirm(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'white', borderRadius: 16, padding: '28px 24px',
+            width: 300, textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>🗑️</div>
+            <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Clear your messages?</p>
+            <p style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>
+              This will delete all messages you sent in this chat. The other person's messages will remain.
+            </p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: 10, border: '1px solid #ddd',
+                  background: '#f5f5f5', cursor: 'pointer', fontWeight: 500
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={clearChat}
+                disabled={clearing}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: 10, border: 'none',
+                  background: '#e53935', color: 'white', cursor: 'pointer', fontWeight: 600
+                }}
+              >
+                {clearing ? '⏳' : 'Clear'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       <div className="chat-msg" ref={chatMsgRef} onScroll={handleScroll} style={getChatMsgStyle()}>
         {messages.map((msg) => {
@@ -483,20 +560,14 @@ if (!token) { setUploading(false); return }
           <button
             onClick={sendStagedFile}
             disabled={uploading}
-            style={{
-              background: '#077eff', color: 'white', border: 'none',
-              borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13
-            }}
+            style={{ background: '#077eff', color: 'white', border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 13 }}
           >
             {uploading ? '⏳' : '📤 Send'}
           </button>
           <button
             onClick={cancelStagedFile}
             disabled={uploading}
-            style={{
-              background: '#eee', border: 'none', borderRadius: 8,
-              padding: '6px 10px', cursor: 'pointer', fontSize: 13
-            }}
+            style={{ background: '#eee', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 13 }}
           >
             ✕
           </button>
