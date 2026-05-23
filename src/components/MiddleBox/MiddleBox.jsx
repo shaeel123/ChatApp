@@ -295,7 +295,7 @@ const MiddleBox = () => {
   }
 
   // ✅ Clear chat — deletes only YOUR sent messages
- const clearChat = async () => {
+const clearChat = async () => {
   const cu = await getCurrentUser()
   if (!cu || !chatUser) return
   setClearing(true)
@@ -304,7 +304,33 @@ const MiddleBox = () => {
   const token = freshSession?.session?.access_token || tokenRef.current
   if (!token) { setClearing(false); return }
 
-  // ✅ Delete ALL messages between both users
+  // ✅ Step 1: collect all media paths from messages
+  const mediaMessages = messages.filter(m => m.image_url || m.video_url)
+  const filePaths = mediaMessages.map(m => {
+    const url = m.image_url || m.video_url
+    // Extract path after /public/avatars/
+    const match = url.match(/\/public\/avatars\/(.+)/)
+    return match ? match[1] : null
+  }).filter(Boolean)
+
+  // ✅ Step 2: delete files from storage
+  if (filePaths.length > 0) {
+    try {
+      await fetch(`${SUPABASE_URL}/storage/v1/object/avatars`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prefixes: filePaths })
+      })
+    } catch (err) {
+      console.error('Storage delete error:', err)
+    }
+  }
+
+  // ✅ Step 3: delete all messages between both users
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/messages?or=(and(user_id.eq.${cu.id},receiver_id.eq.${chatUser.id}),and(user_id.eq.${chatUser.id},receiver_id.eq.${cu.id}))`,
     {
