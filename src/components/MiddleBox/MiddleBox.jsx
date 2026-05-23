@@ -295,38 +295,36 @@ const MiddleBox = () => {
   }
 
   // ✅ Clear chat — deletes only YOUR sent messages
-  const clearChat = async () => {
-    const cu = await getCurrentUser()
-    if (!cu || !chatUser) return
-    setClearing(true)
+ const clearChat = async () => {
+  const cu = await getCurrentUser()
+  if (!cu || !chatUser) return
+  setClearing(true)
 
-    const { data: freshSession } = await supabase.auth.getSession()
-    const token = freshSession?.session?.access_token || tokenRef.current
-    if (!token) { setClearing(false); return }
+  const { data: freshSession } = await supabase.auth.getSession()
+  const token = freshSession?.session?.access_token || tokenRef.current
+  if (!token) { setClearing(false); return }
 
-    // Delete all messages sent by me to this user
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?user_id=eq.${cu.id}&receiver_id=eq.${chatUser.id}`,
-      {
-        method: 'DELETE',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${token}`,
-        }
+  // ✅ Delete ALL messages between both users
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/messages?or=(and(user_id.eq.${cu.id},receiver_id.eq.${chatUser.id}),and(user_id.eq.${chatUser.id},receiver_id.eq.${cu.id}))`,
+    {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${token}`,
       }
-    )
-
-    if (res.ok) {
-      // Remove my messages from local state
-      setMessages(prev => prev.filter(m => m.user_id !== cu.id))
-    } else {
-      console.error('Clear chat failed:', await res.text())
     }
+  )
 
-    setClearing(false)
-    setShowClearConfirm(false)
+  if (res.ok) {
+    setMessages([])
+  } else {
+    console.error('Clear chat failed:', await res.text())
   }
 
+  setClearing(false)
+  setShowClearConfirm(false)
+}
   const copyMessage = (text) => {
     navigator.clipboard.writeText(text)
     setHoveredMsgId(null)
@@ -442,7 +440,7 @@ const MiddleBox = () => {
             <div style={{ fontSize: 36, marginBottom: 10 }}>🗑️</div>
             <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Clear your messages?</p>
             <p style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>
-              This will delete all messages you sent in this chat. The other person's messages will remain.
+              This will delete all messages in this chat for you. This cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button
