@@ -89,14 +89,30 @@ const MiddleBox = () => {
   }
 
   const fetchMessages = async (myId, otherId) => {
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .or(`and(user_id.eq.${myId},receiver_id.eq.${otherId}),and(user_id.eq.${otherId},receiver_id.eq.${myId})`)
-      .order('created_at', { ascending: true })
-    if (!error) setMessages(data)
-  }
+  // Get this user's clear timestamp for this conversation
+  const { data: clearData } = await supabase
+    .from('chat_clears')
+    .select('cleared_at')
+    .eq('user_id', myId)
+    .eq('other_user_id', otherId)
+    .maybeSingle()
 
+  const clearedAt = clearData?.cleared_at || null
+
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .or(`and(user_id.eq.${myId},receiver_id.eq.${otherId}),and(user_id.eq.${otherId},receiver_id.eq.${myId})`)
+    .order('created_at', { ascending: true })
+
+  if (!error) {
+    // ✅ Filter out messages before this user's clear timestamp
+    const filtered = clearedAt
+      ? data.filter(m => new Date(m.created_at) > new Date(clearedAt))
+      : data
+    setMessages(filtered)
+  }
+}
   const getCurrentUser = async () => {
     if (userRef.current) return userRef.current
     const { data } = await supabase.auth.getUser()
@@ -300,52 +316,19 @@ const clearChat = async () => {
   if (!cu || !chatUser) return
   setClearing(true)
 
-  const { data: freshSession } = await supabase.auth.getSession()
-  const token = freshSession?.session?.access_token || tokenRef.current
-  if (!token) { setClearing(false); return }
+  // ✅ Just store cleared_at for THIS user — doesn't affect the other person
+  const { error } = await supabase
+    .from('chat_clears')
+    .upsert({
+      user_id: cu.id,
+      other_user_id: chatUser.id,
+      cleared_at: new Date().toISOString()
+    }, { onConflict: 'user_id,other_user_id' })
 
-  // ✅ Step 1: collect all media paths from messages
-  const mediaMessages = messages.filter(m => m.image_url || m.video_url)
-  const filePaths = mediaMessages.map(m => {
-    const url = m.image_url || m.video_url
-    // Extract path after /public/avatars/
-    const match = url.match(/\/public\/avatars\/(.+)/)
-    return match ? match[1] : null
-  }).filter(Boolean)
-
-  // ✅ Step 2: delete files from storage
-  if (filePaths.length > 0) {
-    try {
-      await fetch(`${SUPABASE_URL}/storage/v1/object/avatars`, {
-        method: 'DELETE',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ prefixes: filePaths })
-      })
-    } catch (err) {
-      console.error('Storage delete error:', err)
-    }
-  }
-
-  // ✅ Step 3: delete all messages between both users
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/messages?or=(and(user_id.eq.${cu.id},receiver_id.eq.${chatUser.id}),and(user_id.eq.${chatUser.id},receiver_id.eq.${cu.id}))`,
-    {
-      method: 'DELETE',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${token}`,
-      }
-    }
-  )
-
-  if (res.ok) {
+  if (!error) {
     setMessages([])
   } else {
-    console.error('Clear chat failed:', await res.text())
+    console.error('Clear failed:', error)
   }
 
   setClearing(false)
