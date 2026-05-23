@@ -4,6 +4,66 @@ import assets from '../../assets/assets'
 import { login, supabase } from '../../config/supabase'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import ReactDOM from 'react-dom'
+
+const TERMS_TEXT = `Terms and Conditions for Chat App
+Last updated: May 23, 2026
+
+INTERPRETATION AND DEFINITIONS
+
+The words whose initial letters are capitalized have meanings defined under the following conditions.
+
+Definitions:
+• Affiliate means an entity that controls, is controlled by, or is under common control with a party.
+• Country refers to: Karnataka, India
+• Company refers to chat app.
+• Device means any device that can access the Service such as a computer, a cell phone or a digital tablet.
+• Service refers to the Website.
+• Website refers to chat app, accessible from https://chat-app-two-hazel.vercel.app/
+• You means the individual accessing or using the Service.
+
+ACKNOWLEDGMENT
+
+These Terms govern the use of this Service and the agreement between You and the Company. Your access to and use of the Service is conditioned on Your acceptance of and compliance with these Terms.
+
+By accessing or using the Service You agree to be bound by these Terms. You represent that you are over the age of 18. The Company does not permit those under 18 to use the Service.
+
+LINKS TO OTHER WEBSITES
+
+Our Service may contain links to third-party websites or services that are not owned or controlled by the Company. The Company has no control over, and assumes no responsibility for, the content, privacy policies, or practices of any third-party websites or services.
+
+TERMINATION
+
+We may terminate or suspend Your access immediately, without prior notice or liability, for any reason whatsoever, including without limitation if You breach these Terms. Upon termination, Your right to use the Service will cease immediately.
+
+LIMITATION OF LIABILITY
+
+To the maximum extent permitted by applicable law, in no event shall the Company or its suppliers be liable for any special, incidental, indirect, or consequential damages whatsoever, including but not limited to damages for loss of profits, loss of data, business interruption, or personal injury.
+
+"AS IS" AND "AS AVAILABLE" DISCLAIMER
+
+The Service is provided to You "AS IS" and "AS AVAILABLE" and with all faults and defects without warranty of any kind. The Company expressly disclaims all warranties, whether express, implied, statutory or otherwise.
+
+GOVERNING LAW
+
+The laws of Karnataka, India, excluding its conflicts of law rules, shall govern these Terms and Your use of the Service.
+
+DISPUTES RESOLUTION
+
+If You have any concern or dispute about the Service, You agree to first try to resolve the dispute informally by contacting the Company.
+
+SEVERABILITY AND WAIVER
+
+If any provision of these Terms is held to be unenforceable or invalid, such provision will be changed and interpreted to accomplish the objectives of such provision to the greatest extent possible under applicable law.
+
+CHANGES TO THESE TERMS
+
+We reserve the right, at Our sole discretion, to modify or replace these Terms at any time. By continuing to access or use Our Service after revisions become effective, You agree to be bound by the revised terms.
+
+CONTACT US
+
+If you have any questions about these Terms and Conditions:
+Email: mohammedshaeel564@gmail.com`
 
 const Login = () => {
   const [currState, setCurrState] = useState("Sign Up")
@@ -12,13 +72,14 @@ const Login = () => {
   const [username, setUsername] = useState('')
   const [agreed, setAgreed] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)  // ✅
+  const [showPassword, setShowPassword] = useState(false)
   const [showOtp, setShowOtp] = useState(false)
   const [showForgot, setShowForgot] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [verifying, setVerifying] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
   const otpRefs = useRef([])
   const navigate = useNavigate()
 
@@ -179,6 +240,67 @@ const Login = () => {
     <div className='login'>
       <img src={assets.logo_big} alt="" className="logo" />
 
+      {/* ✅ Terms & Conditions Popup */}
+      {showTerms && ReactDOM.createPortal(
+        <div
+          onClick={() => setShowTerms(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 99999, padding: '16px'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'white', borderRadius: 16, width: '100%', maxWidth: 540,
+              maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.3)', overflow: 'hidden'
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              padding: '18px 20px', borderBottom: '1px solid #eee',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Terms &amp; Conditions</h2>
+              <button
+                onClick={() => setShowTerms(false)}
+                style={{
+                  background: '#f0f0f0', border: 'none', borderRadius: '50%',
+                  width: 32, height: 32, cursor: 'pointer', fontSize: 16,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >✕</button>
+            </div>
+
+            {/* Scrollable content */}
+            <div style={{
+              padding: '18px 20px', overflowY: 'auto', flex: 1,
+              fontSize: 13, color: '#333', lineHeight: 1.7,
+              whiteSpace: 'pre-wrap', fontFamily: 'inherit'
+            }}>
+              {TERMS_TEXT}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '14px 20px', borderTop: '1px solid #eee', textAlign: 'center' }}>
+              <button
+                onClick={() => { setAgreed(true); setShowTerms(false) }}
+                style={{
+                  background: '#077eff', color: 'white', border: 'none',
+                  borderRadius: 10, padding: '10px 32px', cursor: 'pointer',
+                  fontWeight: 600, fontSize: 14, width: '100%'
+                }}
+              >
+                I Agree
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <form className="login-form" onSubmit={handleSubmit}>
         <h2>{currState}</h2>
 
@@ -196,42 +318,48 @@ const Login = () => {
           onChange={(e) => setEmail(e.target.value)} required
         />
 
-       {/* ✅ Password with show/hide */}
-<div className="password-wrapper">
-  <input
-    id="password" name="password"
-    type={showPassword ? 'text' : 'password'}
-    placeholder="password"
-    className="form-input"
-    value={password}
-    onChange={(e) => setPassword(e.target.value)}
-    required
-  />
-  <span className="toggle-password" onClick={() => setShowPassword(prev => !prev)}>
-    {showPassword ? (
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-        <line x1="1" y1="1" x2="23" y2="23"/>
-      </svg>
-    ) : (
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-        <circle cx="12" cy="12" r="3"/>
-      </svg>
-    )}
-  </span>
-</div>
+        <div className="password-wrapper">
+          <input
+            id="password" name="password"
+            type={showPassword ? 'text' : 'password'}
+            placeholder="password"
+            className="form-input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <span className="toggle-password" onClick={() => setShowPassword(prev => !prev)}>
+            {showPassword ? (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            )}
+          </span>
+        </div>
 
         <button type='submit' disabled={loading}>
           {loading ? 'Please wait...' : currState === "Sign Up" ? "Create account" : "Login now"}
         </button>
 
         <div className="login-term">
-          <input id="agreed" name="agreed" type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-          <a href='https://blank.page/' target='_blank' rel="noopener noreferrer">
-            Agree to the terms of use & privacy policy
-          </a>
+          <input
+            id="agreed" name="agreed" type="checkbox"
+            checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
+          />
+          {/* ✅ Opens popup instead of blank.page */}
+          <span
+            onClick={() => setShowTerms(true)}
+            style={{ cursor: 'pointer', color: '#077eff', fontSize: 13 }}
+          >
+            Agree to the terms of use &amp; privacy policy
+          </span>
         </div>
 
         <div className="login-forgot">
