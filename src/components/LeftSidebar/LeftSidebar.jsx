@@ -19,67 +19,74 @@ const LeftSidebar = () => {
   const channelRef = useRef(null)
   const clearChannelRef = useRef(null)
 
-  const fetchConversations = async () => {
-    if (!userData?.id) return
+ const fetchConversations = async () => {
+  if (!userData?.id) return
 
-    // ✅ Get this user's clear timestamps
-    let clearMap = {}
-    try {
-      const { data: clearData } = await supabase
-        .from('chat_clears')
-        .select('other_user_id, cleared_at')
-        .eq('user_id', userData.id)
-      if (clearData) clearData.forEach(c => { clearMap[c.other_user_id] = c.cleared_at })
-    } catch (_) {}
+  // Get clear timestamps
+  let clearMap = {}
+  try {
+    const { data: clearData } = await supabase
+      .from('chat_clears')
+      .select('other_user_id, cleared_at')
+      .eq('user_id', userData.id)
+    if (clearData) clearData.forEach(c => { clearMap[c.other_user_id] = c.cleared_at })
+  } catch (_) {}
 
-    // ✅ Use inserted_at (not created_at) for ordering
-    const { data: msgs, error } = await supabase
-      .from('messages')
-      .select('*')
-      .or(`user_id.eq.${userData.id},receiver_id.eq.${userData.id}`)
-      .order('created_at', { ascending: false })
+  // ✅ Two separate queries instead of complex or()
+  const { data: sent } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('user_id', userData.id)
+    .order('created_at', { ascending: false })
 
-    if (error || !msgs) return
+  const { data: received } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('receiver_id', userData.id)
+    .order('created_at', { ascending: false })
 
-    const convMap = {}
-    for (const msg of msgs) {
-      const otherId = msg.user_id === userData.id ? msg.receiver_id : msg.user_id
-      if (!otherId) continue
+  const msgs = [...(sent || []), ...(received || [])]
+  if (msgs.length === 0) { setConversations([]); return }
 
-      // ✅ Respect chat_clears — skip messages before cleared_at
-      const clearedAt = clearMap[otherId] || null
-      if (clearedAt && new Date(msg.created_at) <= new Date(clearedAt)) continue
+  // Sort combined list by created_at descending
+  msgs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
-      if (!convMap[otherId]) {
-        convMap[otherId] = { otherId, latestMsg: msg, unread: 0 }
-      }
-      if (msg.receiver_id === userData.id && !msg.is_read) {
-        convMap[otherId].unread++
-      }
+  const convMap = {}
+  for (const msg of msgs) {
+    const otherId = msg.user_id === userData.id ? msg.receiver_id : msg.user_id
+    if (!otherId) continue
+
+    const clearedAt = clearMap[otherId] || null
+    if (clearedAt && new Date(msg.created_at) <= new Date(clearedAt)) continue
+
+    if (!convMap[otherId]) {
+      convMap[otherId] = { otherId, latestMsg: msg, unread: 0 }
     }
-
-    const otherIds = Object.keys(convMap)
-    if (otherIds.length === 0) { setConversations([]); return }
-
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, name, avatar_url, email, bio, is_online')
-      .in('id', otherIds)
-
-    if (!profiles) return
-
-    const result = profiles.map(profile => ({
-      ...profile,
-      latestMsg: convMap[profile.id]?.latestMsg,
-      unread: convMap[profile.id]?.unread || 0,
-    })).sort((a, b) =>
-      // ✅ Sort by inserted_at (not created_at)
-      new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0)
-    )
-
-    setConversations(result)
+    if (msg.receiver_id === userData.id && !msg.is_read) {
+      convMap[otherId].unread++
+    }
   }
 
+  const otherIds = Object.keys(convMap)
+  if (otherIds.length === 0) { setConversations([]); return }
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, name, avatar_url, email, bio, is_online')
+    .in('id', otherIds)
+
+  if (!profiles) return
+
+  const result = profiles.map(profile => ({
+    ...profile,
+    latestMsg: convMap[profile.id]?.latestMsg,
+    unread: convMap[profile.id]?.unread || 0,
+  })).sort((a, b) =>
+    new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0)
+  )
+
+  setConversations(result)
+}
   useEffect(() => {
     if (!userData?.id) return
     fetchConversations()
