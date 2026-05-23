@@ -37,7 +37,7 @@ const LeftSidebar = () => {
       .from('messages')
       .select('*')
       .or(`user_id.eq.${userData.id},receiver_id.eq.${userData.id}`)
-      .order('inserted_at', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (error || !msgs) return
 
@@ -48,7 +48,7 @@ const LeftSidebar = () => {
 
       // ✅ Respect chat_clears — skip messages before cleared_at
       const clearedAt = clearMap[otherId] || null
-      if (clearedAt && new Date(msg.inserted_at) <= new Date(clearedAt)) continue
+      if (clearedAt && new Date(msg.created_at) <= new Date(clearedAt)) continue
 
       if (!convMap[otherId]) {
         convMap[otherId] = { otherId, latestMsg: msg, unread: 0 }
@@ -74,7 +74,7 @@ const LeftSidebar = () => {
       unread: convMap[profile.id]?.unread || 0,
     })).sort((a, b) =>
       // ✅ Sort by inserted_at (not created_at)
-      new Date(b.latestMsg?.inserted_at || 0) - new Date(a.latestMsg?.inserted_at || 0)
+      new Date(b.latestMsg?.created_at || 0) - new Date(a.latestMsg?.created_at || 0)
     )
 
     setConversations(result)
@@ -291,7 +291,7 @@ const LeftSidebar = () => {
                     </span>
                     <div className="friend-meta">
                       {/* ✅ Use inserted_at for time */}
-                      <span className="friend-time">{formatTime(user.latestMsg?.inserted_at)}</span>
+                      <span className="friend-time">{formatTime(user.latestMsg?.created_at)}</span>
                       {user.unread > 0 && (
                         <span className="unread-badge">{user.unread > 99 ? '99+' : user.unread}</span>
                       )}
