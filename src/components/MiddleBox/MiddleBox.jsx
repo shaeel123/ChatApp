@@ -89,15 +89,19 @@ const MiddleBox = () => {
   }
 
   const fetchMessages = async (myId, otherId) => {
-  // Get this user's clear timestamp for this conversation
-  const { data: clearData } = await supabase
-    .from('chat_clears')
-    .select('cleared_at')
-    .eq('user_id', myId)
-    .eq('other_user_id', otherId)
-    .maybeSingle()
-
-  const clearedAt = clearData?.cleared_at || null
+  // ✅ Safely get clear timestamp — default to null if anything goes wrong
+  let clearedAt = null
+  try {
+    const { data: clearData } = await supabase
+      .from('chat_clears')
+      .select('cleared_at')
+      .eq('user_id', myId)
+      .eq('other_user_id', otherId)
+      .maybeSingle()
+    clearedAt = clearData?.cleared_at || null
+  } catch (_) {
+    clearedAt = null
+  }
 
   const { data, error } = await supabase
     .from('messages')
@@ -105,10 +109,9 @@ const MiddleBox = () => {
     .or(`and(user_id.eq.${myId},receiver_id.eq.${otherId}),and(user_id.eq.${otherId},receiver_id.eq.${myId})`)
     .order('created_at', { ascending: true })
 
-  if (!error) {
-    // ✅ Filter out messages before this user's clear timestamp
+  if (!error && data) {
     const filtered = clearedAt
-      ? data.filter(m => new Date(m.created_at) > new Date(clearedAt))
+      ? data.filter(m => new Date(m.created_at + 'Z') > new Date(clearedAt))
       : data
     setMessages(filtered)
   }
