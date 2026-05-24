@@ -209,7 +209,7 @@ const LeftSidebar = () => {
       .from("profiles")
       .select("id, name, avatar_url, email, bio, is_online")
       .or(`name.ilike.%${value}%,email.ilike.%${value}%`)
-      .neq('id', userData?.id)
+      .neq('id', userData?.id || '00000000-0000-0000-0000-000000000000')
 
     setSearched(true)
     if (error || !data) { setSearchResults([]); return }
