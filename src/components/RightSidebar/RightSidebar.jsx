@@ -16,19 +16,34 @@ const RightSidebar = () => {
   const [previewVideo, setPreviewVideo] = useState(null)
 
   const fetchMedia = async () => {
+    // ✅ Get this user's clear timestamp for this conversation
+    let clearedAt = null
+    try {
+      const { data: clearData } = await supabase
+        .from('chat_clears')
+        .select('cleared_at')
+        .eq('user_id', userData.id)
+        .eq('other_user_id', chatUser.id)
+        .maybeSingle()
+      clearedAt = clearData?.cleared_at || null
+    } catch (_) {}
+
     const { data, error } = await supabase
       .from('messages')
       .select('image_url, video_url, created_at')
       .or(
         `and(user_id.eq.${userData.id},receiver_id.eq.${chatUser.id}),and(user_id.eq.${chatUser.id},receiver_id.eq.${userData.id})`
       )
-      // ✅ Fetch rows that have either an image or a video
       .or('image_url.not.is.null,video_url.not.is.null')
       .order('created_at', { ascending: false })
 
     if (!error && data) {
-      // Filter out rows where both are null (safety check)
-      setMedia(data.filter(d => d.image_url || d.video_url))
+      const filtered = data.filter(d => d.image_url || d.video_url)
+      // ✅ Respect chat_clears — hide media before cleared_at
+      const visible = clearedAt
+        ? filtered.filter(d => new Date(d.created_at + 'Z') > new Date(clearedAt))
+        : filtered
+      setMedia(visible)
     }
   }
 
@@ -58,9 +73,14 @@ const RightSidebar = () => {
             setMedia((prev) => [{
               image_url: msg.image_url || null,
               video_url: msg.video_url || null,
+              created_at: msg.created_at || new Date().toISOString(),
             }, ...prev])
           }
         }
+      )
+      // ✅ Also listen to chat_clears so media panel updates instantly after clear
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_clears' },
+        () => fetchMedia()
       )
       .subscribe()
 
@@ -108,7 +128,6 @@ const RightSidebar = () => {
 
                   if (item.video_url) {
                     return (
-                      // ✅ NEW: Video thumbnail in media grid
                       <div
                         key={index}
                         className="rs-media-video-thumb"
@@ -122,7 +141,6 @@ const RightSidebar = () => {
                           muted
                           style={{ pointerEvents: 'none' }}
                         />
-                        {/* Play icon overlay */}
                         <div className="rs-video-play-icon">▶</div>
                       </div>
                     )
@@ -144,7 +162,6 @@ const RightSidebar = () => {
 
       <button onClick={handleLogout}>Logout</button>
 
-      {/* Image preview portal */}
       {previewImg && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setPreviewImg(null)}>
           <div className="img-preview-box" onClick={(e) => e.stopPropagation()}>
@@ -155,7 +172,6 @@ const RightSidebar = () => {
         document.body
       )}
 
-      {/* ✅ NEW: Video preview portal */}
       {previewVideo && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setPreviewVideo(null)}>
           <div className="img-preview-box video-preview-box" onClick={(e) => e.stopPropagation()}>
