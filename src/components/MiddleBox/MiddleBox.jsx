@@ -88,33 +88,36 @@ const MiddleBox = () => {
     setInput((prev) => prev + emojiData.emoji)
   }
 
-  const fetchMessages = async (myId, otherId) => {
-    let clearedAt = null
-    try {
-      const { data: clearData } = await supabase
-        .from('chat_clears')
-        .select('cleared_at')
-        .eq('user_id', myId)
-        .eq('other_user_id', otherId)
-        .maybeSingle()
-      clearedAt = clearData?.cleared_at || null
-    } catch (_) {
-      clearedAt = null
-    }
-
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .or(`and(user_id.eq.${myId},receiver_id.eq.${otherId}),and(user_id.eq.${otherId},receiver_id.eq.${myId})`)
-      .order('created_at', { ascending: true })
-
-    if (!error && data) {
-      const filtered = clearedAt
-        ? data.filter(m => new Date(m.created_at + 'Z') > new Date(clearedAt))
-        : data
-      setMessages(filtered)
-    }
+ const fetchMessages = async (myId, otherId) => {
+  // ✅ Declare clearedAt locally — never leak from outer scope
+  let clearedAt = null
+  try {
+    const { data: clearData } = await supabase
+      .from('chat_clears')
+      .select('cleared_at')
+      .eq('user_id', myId)
+      .eq('other_user_id', otherId)
+      .maybeSingle()
+    clearedAt = clearData?.cleared_at || null
+  } catch (_) {
+    clearedAt = null
   }
+
+  console.log('fetchMessages — myId:', myId, 'otherId:', otherId, 'clearedAt:', clearedAt)
+
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .or(`and(user_id.eq.${myId},receiver_id.eq.${otherId}),and(user_id.eq.${otherId},receiver_id.eq.${myId})`)
+    .order('created_at', { ascending: true })
+
+  if (!error && data) {
+    const filtered = clearedAt
+      ? data.filter(m => new Date(m.created_at + 'Z') > new Date(clearedAt))
+      : data
+    setMessages(filtered)
+  }
+}
 
   const getCurrentUser = async () => {
     if (userRef.current) return userRef.current
