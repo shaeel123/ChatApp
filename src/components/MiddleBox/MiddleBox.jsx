@@ -316,58 +316,68 @@ const MiddleBox = () => {
     setHoveredMsgId(null)
   }
 
-  const clearChat = async () => {
+const clearChat = async () => {
   const cu = await getCurrentUser()
   if (!cu || !chatUser) return
   setClearing(true)
 
-  const { data: freshSession } = await supabase.auth.getSession()
-  const token = freshSession?.session?.access_token || tokenRef.current
-  if (!token) { setClearing(false); return }
+  // Step 1: Get previous cleared_at
+  let clearedAt = null
+  try {
+    const { data: existing } = await supabase
+      .from('chat_clears')
+      .select('cleared_at')
+      .eq('user_id', cu.id)
+      .eq('other_user_id', chatUser.id)
+      .maybeSingle()
+    clearedAt = existing?.cleared_at || null
+  } catch (_) {}
 
-  // Step 1: Fetch ALL messages in this conversation to get media URLs
-  const { data: allMsgs } = await supabase
+  // Step 2: Fetch only MY sent messages with media
+  const { data: myMsgs } = await supabase
     .from('messages')
-    .select('image_url, video_url')
-    .or(`and(user_id.eq.${cu.id},receiver_id.eq.${chatUser.id}),and(user_id.eq.${chatUser.id},receiver_id.eq.${cu.id})`)
-
-  // Step 2: Delete all media files from storage
-  if (allMsgs?.length) {
-    const filePaths = allMsgs
-      .map(m => {
-        const url = m.image_url || m.video_url
-        if (!url) return null
-        const match = url.match(/\/public\/avatars\/(.+)/)
-        return match ? match[1] : null
-      })
-      .filter(Boolean)
-
-    if (filePaths.length > 0) {
-      const { error: storageErr } = await supabase.storage
-        .from('avatars')
-        .remove(filePaths)
-      if (storageErr) console.error('Storage delete error:', storageErr)
-      else console.log('✅ Deleted media files:', filePaths.length)
-    }
-  }
-
-  // Step 3: Delete ALL messages both sides
-  const { error: msgErr } = await supabase
-    .from('messages')
-    .delete()
-    .or(`and(user_id.eq.${cu.id},receiver_id.eq.${chatUser.id}),and(user_id.eq.${chatUser.id},receiver_id.eq.${cu.id})`)
-
-  if (msgErr) {
-    console.error('Clear messages failed:', msgErr)
-  }
-
-  // Step 4: Clean up chat_clears entry
-  await supabase.from('chat_clears')
-    .delete()
+    .select('id, image_url, video_url, created_at')
     .eq('user_id', cu.id)
-    .eq('other_user_id', chatUser.id)
+    .eq('receiver_id', chatUser.id)
 
-  setMessages([])
+  // Only messages visible to me (after my last clear)
+  const visibleMyMsgs = clearedAt
+    ? (myMsgs || []).filter(m => new Date(m.created_at + 'Z') > new Date(clearedAt))
+    : (myMsgs || [])
+
+  // Step 3: Delete only MY media files from storage
+  const myFilePaths = visibleMyMsgs
+    .map(m => {
+      const url = m.image_url || m.video_url
+      if (!url) return null
+      const match = url.match(/\/public\/avatars\/(.+)/)
+      return match ? match[1] : null
+    })
+    .filter(Boolean)
+
+  if (myFilePaths.length > 0) {
+    const { error: storageErr } = await supabase.storage
+      .from('avatars')
+      .remove(myFilePaths)
+    if (storageErr) console.error('Storage delete error:', storageErr)
+    else console.log('✅ Deleted media files:', myFilePaths.length)
+  }
+
+  // Step 4: ✅ Store cleared_at for THIS user ONLY — does NOT delete any messages
+  const { error } = await supabase
+    .from('chat_clears')
+    .upsert({
+      user_id: cu.id,
+      other_user_id: chatUser.id,
+      cleared_at: new Date().toISOString()
+    }, { onConflict: 'user_id,other_user_id' })
+
+  if (!error) {
+    setMessages([])
+  } else {
+    console.error('Clear failed:', error)
+  }
+
   setClearing(false)
   setShowClearConfirm(false)
 }
