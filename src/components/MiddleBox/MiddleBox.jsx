@@ -494,7 +494,7 @@ const clearChat = async () => {
             <div style={{ fontSize: 36, marginBottom: 10 }}>🗑️</div>
             <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Clear your messages?</p>
             <p style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>
-              This will delete all messages in this chat for you. This cannot be undone.
+              This will delete all messages in this chat for you. This cannot be undone.After this Just "REFRESH ONCE"
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button
