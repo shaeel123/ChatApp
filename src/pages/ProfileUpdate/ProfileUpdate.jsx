@@ -6,17 +6,6 @@ import { useAppContext } from '../../context/AppContext'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 
-const SECURITY_QUESTIONS = [
-  "What is your mother's maiden name?",
-  "What was the name of your first pet?",
-  "What was the name of your elementary school?",
-  "What city were you born in?",
-  "What is your oldest sibling's middle name?",
-  "What was the make of your first car?",
-  "What is your favourite movie?",
-  "What street did you grow up on?",
-]
-
 const ProfileUpdate = () => {
   const [image, setImage] = useState(false)
   const [name, setName] = useState("")
@@ -26,10 +15,6 @@ const ProfileUpdate = () => {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [changingPassword, setChangingPassword] = useState(false)
-  const [securityQuestion, setSecurityQuestion] = useState("")
-  const [securityAnswer, setSecurityAnswer] = useState("")
-  const [savingSecurityQ, setSavingSecurityQ] = useState(false)
-  const [hasSecurityQ, setHasSecurityQ] = useState(false)
   const navigate = useNavigate()
   const { loadUserData, userData } = useAppContext()
 
@@ -37,10 +22,6 @@ const ProfileUpdate = () => {
     if (userData) {
       setName(userData.name || "")
       setBio(userData.bio || "")
-      if (userData.security_question) {
-        setSecurityQuestion(userData.security_question)
-        setHasSecurityQ(true)
-      }
     }
   }, [userData])
 
@@ -123,6 +104,7 @@ const ProfileUpdate = () => {
     }
     setChangingPassword(true)
     try {
+      // ✅ verify current password first by re-signing in
       const { data: authData } = await supabase.auth.getUser()
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: authData.user.email,
@@ -132,8 +114,11 @@ const ProfileUpdate = () => {
         toast.error("Current password is incorrect.")
         return
       }
+
+      // ✅ update to new password
       const { error } = await supabase.auth.updateUser({ password: newPassword })
       if (error) throw error
+
       toast.success("Password changed successfully!")
       setCurrentPassword("")
       setNewPassword("")
@@ -141,35 +126,6 @@ const ProfileUpdate = () => {
       toast.error(err.message || "Failed to change password.")
     } finally {
       setChangingPassword(false)
-    }
-  }
-
-  const handleSaveSecurityQuestion = async () => {
-    if (!securityQuestion) { toast.error("Please select a security question."); return }
-    if (!securityAnswer.trim()) { toast.error("Please enter your answer."); return }
-    if (securityAnswer.trim().length < 2) { toast.error("Answer is too short."); return }
-
-    setSavingSecurityQ(true)
-    try {
-      const { data: authData } = await supabase.auth.getUser()
-      const user = authData.user
-      if (!user) return
-
-      // Store answer lowercased + trimmed for case-insensitive matching
-      const { error } = await supabase.from('profiles').update({
-        security_question: securityQuestion,
-        security_answer: securityAnswer.trim().toLowerCase(),
-      }).eq('id', user.id)
-
-      if (error) throw error
-      toast.success("Security question saved!")
-      setHasSecurityQ(true)
-      setSecurityAnswer("")
-      await loadUserData()
-    } catch (err) {
-      toast.error(err.message || "Failed to save security question.")
-    } finally {
-      setSavingSecurityQ(false)
     }
   }
 
@@ -201,14 +157,21 @@ const ProfileUpdate = () => {
     <div className='profile'>
       <div className="profile-container">
 
+        {/* ✅ Back to chat button */}
         <button
           type="button"
           onClick={() => navigate('/chat')}
           style={{
-            position: 'absolute', top: '16px', right: '16px',
-            background: '#df1637', color: 'white', border: 'none',
-            borderRadius: '8px', padding: '6px 14px',
-            cursor: 'pointer', fontSize: '13px',
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: '#df1637',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '6px 14px',
+            cursor: 'pointer',
+            fontSize: '13px',
           }}
         >
           ← Back to Chat
@@ -219,7 +182,10 @@ const ProfileUpdate = () => {
 
           <label htmlFor="avatar" style={{ cursor: 'pointer' }}>
             <input
-              type="file" id="avatar" accept=".png, .jpg, .jpeg" hidden
+              type="file"
+              id="avatar"
+              accept=".png, .jpg, .jpeg"
+              hidden
               onChange={async (e) => {
                 const file = e.target.files[0]
                 if (!file) return
@@ -233,12 +199,17 @@ const ProfileUpdate = () => {
 
           {(image || userData?.avatar_url) && (
             <button
-              type="button" onClick={handleRemoveImage}
+              type="button"
+              onClick={handleRemoveImage}
               style={{
-                marginTop: '4px', background: 'none',
-                border: '1px solid #ff4d4d', color: '#ff4d4d',
-                borderRadius: '6px', padding: '4px 12px',
-                cursor: 'pointer', fontSize: '13px',
+                marginTop: '4px',
+                background: 'none',
+                border: '1px solid #ff4d4d',
+                color: '#ff4d4d',
+                borderRadius: '6px',
+                padding: '4px 12px',
+                cursor: 'pointer',
+                fontSize: '13px',
               }}
             >
               ✕ Remove Image
@@ -246,32 +217,43 @@ const ProfileUpdate = () => {
           )}
 
           <input
-            type="text" placeholder='Your name'
-            value={name} onChange={(e) => setName(e.target.value)} required
+            type="text"
+            placeholder='Your name'
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
           />
 
           <textarea
             placeholder='Write profile bio'
-            value={bio} onChange={(e) => setBio(e.target.value)} required
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            required
           />
+
+          
 
           {/* ✅ Change Email section */}
           <div className="change-email-section">
             <p className="section-label">Change Email</p>
             <div className="email-row">
               <input
-                type="email" placeholder='Enter new email address'
-                value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
+                type="email"
+                placeholder='Enter new email address'
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
               />
               <button
-                type="button" onClick={handleChangeEmail}
-                disabled={changingEmail} className="email-change-btn"
+                type="button"
+                onClick={handleChangeEmail}
+                disabled={changingEmail}
+                className="email-change-btn"
               >
                 {changingEmail ? 'Sent...' : 'Update'}
               </button>
             </div>
             <small className="email-note">
-              A confirmation link will be sent to your new email. Click it to complete the change.
+              A confirmation link will be sent to your new email. Click it to complete the change. After confirming, use your new email to log in.
             </small>
           </div>
 
@@ -280,18 +262,24 @@ const ProfileUpdate = () => {
             <p className="section-label">Change Password</p>
             <div className="email-row">
               <input
-                type="password" placeholder="Current password"
-                value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                type="password"
+                placeholder="Current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
               />
             </div>
             <div className="email-row" style={{ marginTop: '8px' }}>
               <input
-                type="password" placeholder="New password (min 6 characters)"
-                value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                type="password"
+                placeholder="New password (min 6 characters)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
               />
               <button
-                type="button" onClick={handleChangePassword}
-                disabled={changingPassword} className="email-change-btn"
+                type="button"
+                onClick={handleChangePassword}
+                disabled={changingPassword}
+                className="email-change-btn"
               >
                 {changingPassword ? 'Saved..' : 'Update'}
               </button>
@@ -299,54 +287,6 @@ const ProfileUpdate = () => {
             <small className="email-note">
               Enter your current password and a new password to update it.
             </small>
-          </div>
-
-          {/* ✅ Security Question section */}
-          <div className="change-email-section">
-            <p className="section-label">
-              Security Question
-              {hasSecurityQ && (
-                <span style={{
-                  marginLeft: 8, fontSize: 11, color: '#2ecc71',
-                  fontWeight: 600, background: 'rgba(46,204,113,0.1)',
-                  padding: '2px 8px', borderRadius: 100
-                }}>✓ Set</span>
-              )}
-            </p>
-            <small className="email-note" style={{ marginBottom: 10, display: 'block' }}>
-              Used to recover your account if you lose access to your email.
-            </small>
-            <select
-              value={securityQuestion}
-              onChange={(e) => setSecurityQuestion(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 12px', borderRadius: 8,
-                border: '1px solid #ddd', fontSize: 13, marginBottom: 8,
-                background: 'white', color: '#333', cursor: 'pointer'
-              }}
-            >
-              <option value="">— Select a security question —</option>
-              {SECURITY_QUESTIONS.map(q => (
-                <option key={q} value={q}>{q}</option>
-              ))}
-            </select>
-            <div className="email-row">
-              <input
-                type="text"
-                placeholder={hasSecurityQ ? "Enter new answer to update" : "Your answer"}
-                value={securityAnswer}
-                onChange={(e) => setSecurityAnswer(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={handleSaveSecurityQuestion}
-                disabled={savingSecurityQ}
-                className="email-change-btn"
-              >
-                {savingSecurityQ ? 'Saving...' : hasSecurityQ ? 'Update' : 'Save'}
-              </button>
-            </div>
-            <small className="email-note">Answer is case-insensitive.</small>
           </div>
 
           <button type='submit'>Save</button>

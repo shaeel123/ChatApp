@@ -80,17 +80,6 @@ const Login = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [verifying, setVerifying] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
-
-  // ✅ Security question recovery states
-  const [showSecurityRecovery, setShowSecurityRecovery] = useState(false)
-  const [recoveryEmail, setRecoveryEmail] = useState('')
-  const [recoveryQuestion, setRecoveryQuestion] = useState('')
-  const [recoveryAnswer, setRecoveryAnswer] = useState('')
-  const [recoveryStep, setRecoveryStep] = useState(1) // 1=enter email, 2=answer question, 3=set new password
-  const [recoveryLoading, setRecoveryLoading] = useState(false)
-  const [newRecoveryPassword, setNewRecoveryPassword] = useState('')
-  const [recoveryUserId, setRecoveryUserId] = useState(null)
-
   const otpRefs = useRef([])
   const navigate = useNavigate()
 
@@ -132,91 +121,6 @@ const Login = () => {
       toast.error(err.message || "Failed to send reset link.")
     } finally {
       setForgotLoading(false)
-    }
-  }
-
-  // ✅ Step 1: Look up user's security question by email
-  const handleRecoveryEmailSubmit = async () => {
-    if (!recoveryEmail.trim()) { toast.error("Please enter your email."); return }
-    setRecoveryLoading(true)
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('id, security_question, security_answer')
-        .eq('email', recoveryEmail.trim().toLowerCase())
-        .maybeSingle()
-
-      if (error || !profile) {
-        toast.error("No account found with that email.")
-        return
-      }
-      if (!profile.security_question || !profile.security_answer) {
-        toast.error("This account has no security question set. Use email reset instead.")
-        return
-      }
-
-      setRecoveryQuestion(profile.security_question)
-      setRecoveryUserId(profile.id)
-      setRecoveryStep(2)
-    } catch (err) {
-      toast.error("Something went wrong.")
-    } finally {
-      setRecoveryLoading(false)
-    }
-  }
-
-  // ✅ Step 2: Verify answer
-  const handleRecoveryAnswerSubmit = async () => {
-    if (!recoveryAnswer.trim()) { toast.error("Please enter your answer."); return }
-    setRecoveryLoading(true)
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('security_answer')
-        .eq('id', recoveryUserId)
-        .maybeSingle()
-
-      if (!profile) { toast.error("Account not found."); return }
-
-      const correct = profile.security_answer === recoveryAnswer.trim().toLowerCase()
-      if (!correct) {
-        toast.error("Incorrect answer. Please try again.")
-        setRecoveryAnswer('')
-        return
-      }
-
-      toast.success("Answer correct! Set your new password.")
-      setRecoveryStep(3)
-    } catch (err) {
-      toast.error("Something went wrong.")
-    } finally {
-      setRecoveryLoading(false)
-    }
-  }
-
-  // ✅ Step 3: Send password reset email (we verified identity via security Q)
-  const handleRecoveryPasswordReset = async () => {
-    if (!newRecoveryPassword.trim() || newRecoveryPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.")
-      return
-    }
-    setRecoveryLoading(true)
-    try {
-      // Send reset link to their email — identity already verified
-      const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      })
-      if (error) throw error
-      toast.success("Password reset link sent to your email! Click it to set your new password.")
-      setShowSecurityRecovery(false)
-      setRecoveryStep(1)
-      setRecoveryEmail('')
-      setRecoveryAnswer('')
-      setNewRecoveryPassword('')
-    } catch (err) {
-      toast.error(err.message || "Failed to send reset link.")
-    } finally {
-      setRecoveryLoading(false)
     }
   }
 
@@ -280,83 +184,6 @@ const Login = () => {
     }
   }
 
-  // ✅ Security Question Recovery Screen
-  if (showSecurityRecovery) {
-    return (
-      <div className='login'>
-        <img src={assets.logo_big} alt="" className="logo" />
-        <div className="login-form otp-form">
-          {/* Step indicators */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
-            {[1,2,3].map(s => (
-              <div key={s} style={{
-                width: 28, height: 28, borderRadius: '50%',
-                background: recoveryStep >= s ? '#077eff' : '#e0e0e0',
-                color: recoveryStep >= s ? 'white' : '#999',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, fontWeight: 700, transition: 'background 0.3s'
-              }}>{s}</div>
-            ))}
-          </div>
-
-          {recoveryStep === 1 && (
-            <>
-              <h2>Account Recovery</h2>
-              <p className="otp-subtitle">Enter the email address of the account you want to recover.</p>
-              <input
-                type="email" placeholder="Your email address" className="form-input"
-                value={recoveryEmail} onChange={(e) => setRecoveryEmail(e.target.value)}
-              />
-              <button onClick={handleRecoveryEmailSubmit} disabled={recoveryLoading} className="otp-verify-btn">
-                {recoveryLoading ? 'Looking up...' : 'Continue'}
-              </button>
-            </>
-          )}
-
-          {recoveryStep === 2 && (
-            <>
-              <h2>Security Question</h2>
-              <p className="otp-subtitle" style={{ fontWeight: 600, color: '#333', fontSize: 14, marginBottom: 16 }}>
-                {recoveryQuestion}
-              </p>
-              <input
-                type="text" placeholder="Your answer" className="form-input"
-                value={recoveryAnswer} onChange={(e) => setRecoveryAnswer(e.target.value)}
-              />
-              <small style={{ color: '#999', fontSize: 12, marginBottom: 16, display: 'block' }}>
-                Answer is case-insensitive
-              </small>
-              <button onClick={handleRecoveryAnswerSubmit} disabled={recoveryLoading} className="otp-verify-btn">
-                {recoveryLoading ? 'Verifying...' : 'Verify Answer'}
-              </button>
-            </>
-          )}
-
-          {recoveryStep === 3 && (
-            <>
-              <h2>Identity Verified ✅</h2>
-              <p className="otp-subtitle">
-                Click below to receive a password reset link at<br />
-                <strong>{recoveryEmail}</strong>
-              </p>
-              <button onClick={handleRecoveryPasswordReset} disabled={recoveryLoading} className="otp-verify-btn">
-                {recoveryLoading ? 'Sending...' : 'Send Reset Link'}
-              </button>
-            </>
-          )}
-
-          <p className="otp-back" onClick={() => {
-            setShowSecurityRecovery(false)
-            setRecoveryStep(1)
-            setRecoveryEmail('')
-            setRecoveryAnswer('')
-            setRecoveryQuestion('')
-          }}>← Back to Login</p>
-        </div>
-      </div>
-    )
-  }
-
   if (showForgot) {
     return (
       <div className='login'>
@@ -371,16 +198,6 @@ const Login = () => {
           <button onClick={handleForgotPassword} disabled={forgotLoading} className="otp-verify-btn">
             {forgotLoading ? 'Sending...' : 'Send Reset Link'}
           </button>
-          {/* ✅ Security question recovery link */}
-          <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: '#666' }}>
-            Lost access to your email?{' '}
-            <span
-              onClick={() => { setShowForgot(false); setShowSecurityRecovery(true) }}
-              style={{ color: '#077eff', cursor: 'pointer', fontWeight: 600 }}
-            >
-              Recover via security question
-            </span>
-          </p>
           <p className="otp-back" onClick={() => { setShowForgot(false); setForgotEmail('') }}>← Back to Login</p>
         </div>
       </div>
@@ -423,6 +240,7 @@ const Login = () => {
     <div className='login'>
       <img src={assets.logo_big} alt="" className="logo" />
 
+      {/* ✅ Terms & Conditions Popup */}
       {showTerms && ReactDOM.createPortal(
         <div
           onClick={() => setShowTerms(false)}
@@ -440,6 +258,7 @@ const Login = () => {
               boxShadow: '0 8px 40px rgba(0,0,0,0.3)', overflow: 'hidden'
             }}
           >
+            {/* Header */}
             <div style={{
               padding: '18px 20px', borderBottom: '1px solid #eee',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between'
@@ -454,6 +273,8 @@ const Login = () => {
                 }}
               >✕</button>
             </div>
+
+            {/* Scrollable content */}
             <div style={{
               padding: '18px 20px', overflowY: 'auto', flex: 1,
               fontSize: 13, color: '#333', lineHeight: 1.7,
@@ -461,6 +282,8 @@ const Login = () => {
             }}>
               {TERMS_TEXT}
             </div>
+
+            {/* Footer */}
             <div style={{ padding: '14px 20px', borderTop: '1px solid #eee', textAlign: 'center' }}>
               <button
                 onClick={() => { setAgreed(true); setShowTerms(false) }}
@@ -499,8 +322,11 @@ const Login = () => {
           <input
             id="password" name="password"
             type={showPassword ? 'text' : 'password'}
-            placeholder="password" className="form-input"
-            value={password} onChange={(e) => setPassword(e.target.value)} required
+            placeholder="password"
+            className="form-input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
           />
           <span className="toggle-password" onClick={() => setShowPassword(prev => !prev)}>
             {showPassword ? (
@@ -527,6 +353,7 @@ const Login = () => {
             id="agreed" name="agreed" type="checkbox"
             checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
           />
+          {/* ✅ Opens popup instead of blank.page */}
           <span
             onClick={() => setShowTerms(true)}
             style={{ cursor: 'pointer', color: '#077eff', fontSize: 13 }}
