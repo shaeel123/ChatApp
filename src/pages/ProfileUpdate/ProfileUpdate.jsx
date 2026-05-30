@@ -11,7 +11,6 @@ const ProfileUpdate = () => {
   const [name, setName] = useState("")
   const [bio, setBio] = useState("")
   const [newEmail, setNewEmail] = useState("")
-  const [phone, setPhone] = useState("")
   const [changingEmail, setChangingEmail] = useState(false)
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -23,7 +22,6 @@ const ProfileUpdate = () => {
     if (userData) {
       setName(userData.name || "")
       setBio(userData.bio || "")
-      setPhone(userData.phone || "")
     }
   }, [userData])
 
@@ -142,7 +140,6 @@ const ProfileUpdate = () => {
       id: user.id,
       name,
       bio,
-      phone,
     })
 
     if (error) { toast.error("Failed to save profile!"); return }
@@ -234,12 +231,7 @@ const ProfileUpdate = () => {
             required
           />
 
-          <input
-            type="tel"
-            placeholder='Phone number (for recovery)'
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
+          
 
           {/* ✅ Change Email section */}
           <div className="change-email-section">
