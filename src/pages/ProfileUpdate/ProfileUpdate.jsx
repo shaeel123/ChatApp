@@ -289,7 +289,7 @@ const ProfileUpdate = () => {
                 disabled={changingPassword}
                 className="email-change-btn"
               >
-                {changingPassword ? 'Saving...' : 'Update'}
+                {changingPassword ? 'Saved..' : 'Update'}
               </button>
             </div>
             <small className="email-note">
