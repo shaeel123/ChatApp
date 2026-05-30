@@ -13,6 +13,9 @@ const ProfileUpdate = () => {
   const [newEmail, setNewEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [changingEmail, setChangingEmail] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [changingPassword, setChangingPassword] = useState(false)
   const navigate = useNavigate()
   const { loadUserData, userData } = useAppContext()
 
@@ -24,7 +27,6 @@ const ProfileUpdate = () => {
     }
   }, [userData])
 
-  // ✅ When Supabase confirms email change, sync new email to profiles table
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'USER_UPDATED' && session?.user?.email) {
@@ -44,19 +46,13 @@ const ProfileUpdate = () => {
     if (!user) return
 
     const filePath = `${user.id}/avatar.png`
-
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(filePath, file, { upsert: true })
 
-    if (uploadError) {
-      console.error("Upload error:", uploadError)
-      return
-    }
+    if (uploadError) { console.error("Upload error:", uploadError); return }
 
-    const { data: urlData } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath)
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath)
 
     await supabase.from('profiles').upsert({
       id: user.id,
@@ -76,11 +72,7 @@ const ProfileUpdate = () => {
     const filePath = `${user.id}/avatar.png`
     await supabase.storage.from('avatars').remove([filePath])
 
-    const { error } = await supabase.from('profiles').upsert({
-      id: user.id,
-      avatar_url: null,
-    })
-
+    const { error } = await supabase.from('profiles').upsert({ id: user.id, avatar_url: null })
     if (error) { toast.error("Failed to remove image."); return }
 
     setImage(false)
@@ -100,6 +92,42 @@ const ProfileUpdate = () => {
       toast.error(err.message || "Failed to update email.")
     } finally {
       setChangingEmail(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (!currentPassword.trim() || !newPassword.trim()) {
+      toast.error("Please fill in both password fields.")
+      return
+    }
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters.")
+      return
+    }
+    setChangingPassword(true)
+    try {
+      // ✅ verify current password first by re-signing in
+      const { data: authData } = await supabase.auth.getUser()
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: authData.user.email,
+        password: currentPassword
+      })
+      if (signInError) {
+        toast.error("Current password is incorrect.")
+        return
+      }
+
+      // ✅ update to new password
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+
+      toast.success("Password changed successfully!")
+      setCurrentPassword("")
+      setNewPassword("")
+    } catch (err) {
+      toast.error(err.message || "Failed to change password.")
+    } finally {
+      setChangingPassword(false)
     }
   }
 
@@ -131,25 +159,26 @@ const ProfileUpdate = () => {
   return (
     <div className='profile'>
       <div className="profile-container">
+
         {/* ✅ Back to chat button */}
-  <button
-    type="button"
-    onClick={() => navigate('/chat')}
-    style={{
-      position: 'absolute',
-      top: '16px',
-      right: '16px',
-      background: '#df1637',
-      color: 'white',
-      border: 'none',
-      borderRadius: '8px',
-      padding: '6px 14px',
-      cursor: 'pointer',
-      fontSize: '13px',
-    }}
-  >
-    ← Back to Chat
-  </button>
+        <button
+          type="button"
+          onClick={() => navigate('/chat')}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: '#df1637',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '6px 14px',
+            cursor: 'pointer',
+            fontSize: '13px',
+          }}
+        >
+          ← Back to Chat
+        </button>
 
         <form onSubmit={handleSubmit}>
           <h3>Profile Details</h3>
@@ -212,6 +241,7 @@ const ProfileUpdate = () => {
             onChange={(e) => setPhone(e.target.value)}
           />
 
+          {/* ✅ Change Email section */}
           <div className="change-email-section">
             <p className="section-label">Change Email</p>
             <div className="email-row">
@@ -232,6 +262,38 @@ const ProfileUpdate = () => {
             </div>
             <small className="email-note">
               A confirmation link will be sent to your new email. Click it to complete the change. After confirming, use your new email to log in.
+            </small>
+          </div>
+
+          {/* ✅ Change Password section */}
+          <div className="change-email-section">
+            <p className="section-label">Change Password</p>
+            <div className="email-row">
+              <input
+                type="password"
+                placeholder="Current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+            </div>
+            <div className="email-row" style={{ marginTop: '8px' }}>
+              <input
+                type="password"
+                placeholder="New password (min 6 characters)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={handleChangePassword}
+                disabled={changingPassword}
+                className="email-change-btn"
+              >
+                {changingPassword ? 'Saving...' : 'Update'}
+              </button>
+            </div>
+            <small className="email-note">
+              Enter your current password and a new password to update it.
             </small>
           </div>
 
