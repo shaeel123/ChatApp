@@ -291,8 +291,6 @@ const ProfileUpdate = () => {
 
           <button type='submit'>Save</button>
         </form>
-
-        <img className='profile-pic' src={currentAvatar} alt="" />
       </div>
     </div>
   )
