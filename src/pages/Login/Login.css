@@ -1,95 +1,144 @@
 .login {
-    min-height: 100vh;
-    background-image: url('/bg4.png');
-    background-size: cover;
-    background-position: center;
-    align-items: center;
-    justify-content: space-evenly;
-    display: flex;
+  min-height: 100vh;
+  background: var(--background);
+  background-image: url('/bg4.png');
+  background-size: cover;
+  background-position: center;
+  align-items: center;
+  justify-content: space-evenly;
+  display: flex;
+  position: relative;
 }
+.login::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 20, 50, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 0;
+}
+.login > * { position: relative; z-index: 1; }
 
-.logo {
-    width: max(20vw, 200px);
-}
+.logo { width: max(20vw, 200px); }
 
 .login-form {
-    background: white;
-    padding: 20px 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  min-width: 340px;
+  animation: fade-rise 0.7s ease-out both;
 }
 
 h2 {
-    font-weight: 500;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  color: var(--foreground);
+  letter-spacing: -0.5px;
 }
 
 .form-input {
-    padding: 8px 10px;
-    border: 1px solid #c9c9c9;
-    border-radius: 4px;
-    outline-color: purple;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  outline: none;
+  background: rgba(255,255,255,0.06);
+  color: var(--foreground);
+  font-size: 14px;
+  transition: border 0.2s, background 0.2s;
 }
+.form-input:focus {
+  border-color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.1);
+}
+.form-input::placeholder { color: var(--muted-foreground); }
 
 button {
-    padding: 10px;
-    background-color: #077eff;
-    color: white;
-    font-size: 16px;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
+  padding: 11px;
+  background: rgba(255,255,255,0.9);
+  color: hsl(0,0%,4%);
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
 }
+button:hover { background: white; transform: scale(1.02); }
 
 .login-term {
-    display: flex;
-    gap: 5px;
-    font-size: 12px;
-    color: rgb(106, 106, 235);
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  align-items: center;
 }
+.login-term input[type="checkbox"] { accent-color: #077eff; }
 
 span {
-    font-weight: 500;
-    color: rgb(106, 106, 235);
-    cursor: pointer;
+  font-weight: 500;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
 }
+span:hover { color: white; }
 
-.otp-form { text-align: center; }
-.otp-subtitle { font-size: 13px; color: #666; margin-bottom: 24px; line-height: 1.6; }
-.otp-inputs { display: flex; gap: 10px; justify-content: center; margin-bottom: 24px; }
-.otp-box { width: 44px; height: 52px; text-align: center; font-size: 22px; font-weight: 700; border: 2px solid #ddd; border-radius: 8px; outline: none; transition: border 0.2s; }
-.otp-box:focus { border-color: #077eff; }
-.otp-verify-btn { width: 100%; padding: 12px; background: #077eff; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; margin-bottom: 16px; }
-.otp-verify-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-.otp-resend { font-size: 13px; color: #666; margin-bottom: 12px; }
-.otp-back { font-size: 13px; color: #077eff; cursor: pointer; margin-top: 8px; }
+.login-forgot { display: flex; flex-direction: column; gap: 6px; }
+
+.login-toggle {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+.login-toggle span { color: rgba(255,255,255,0.8); }
 
 .forgot-link {
-    font-size: 14px;
-    color: red;
-    cursor: pointer;
-    margin-top: 4px;
-    text-align: center;
-    display: block;
+  font-size: 13px;
+  color: #ff8787;
+  cursor: pointer;
+  text-align: center;
+  display: block;
+  transition: color 0.2s;
 }
+.forgot-link:hover { color: #ffa0a0; }
 
-.password-wrapper {
-    position: relative;
-}
-
-.password-wrapper .form-input {
-    width: 100%;
-    box-sizing: border-box;
-    padding-right: 36px;
-}
-
+.password-wrapper { position: relative; }
+.password-wrapper .form-input { width: 100%; box-sizing: border-box; padding-right: 40px; }
 .toggle-password {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    font-size: 14px;
-    user-select: none;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--muted-foreground);
+  display: flex;
 }
+.toggle-password:hover { color: var(--foreground); }
+
+/* OTP */
+.otp-form { text-align: center; }
+.otp-subtitle { font-size: 13px; color: var(--muted-foreground); margin-bottom: 24px; line-height: 1.6; }
+.otp-inputs { display: flex; gap: 10px; justify-content: center; margin-bottom: 24px; }
+.otp-box {
+  width: 46px; height: 54px; text-align: center; font-size: 22px; font-weight: 700;
+  border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; outline: none;
+  background: rgba(255,255,255,0.06); color: white; transition: border 0.2s;
+}
+.otp-box:focus { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); }
+.otp-verify-btn {
+  width: 100%; padding: 12px; background: rgba(255,255,255,0.9); color: #111;
+  border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+  margin-bottom: 16px; transition: background 0.2s, transform 0.2s;
+}
+.otp-verify-btn:hover { background: white; transform: scale(1.02); }
+.otp-verify-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.otp-resend { font-size: 13px; color: var(--muted-foreground); margin-bottom: 12px; }
+.otp-back { font-size: 13px; color: rgba(255,255,255,0.5); cursor: pointer; margin-top: 8px; transition: color 0.2s; }
+.otp-back:hover { color: white; }
