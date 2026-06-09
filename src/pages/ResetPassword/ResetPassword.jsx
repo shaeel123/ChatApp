@@ -59,7 +59,10 @@ const ResetPassword = () => {
       <video src={VIDEO_URL} autoPlay loop muted playsInline style={S.video} />
       <div style={S.overlay} />
       <div style={S.content}>
-        <img src={assets.logo_big} alt="" style={S.logo} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+  <img src={assets.logo_icon} alt="" style={{ width: '80px' }} />
+  <span style={{ color: 'white', fontSize: '32px', fontWeight: '600' }}>BlueC</span>
+</div>
         <div style={S.card}>
           <h2 style={S.h2}>Set New Password</h2>
           {!ready ? (

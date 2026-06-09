@@ -262,7 +262,10 @@ const Login = () => {
     <div style={S.page}>
       <VideoBackground />
       <div style={S.content}>
-        <img src={assets.logo_big} alt="" style={S.logo} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+  <img src={assets.logo_icon} alt="" style={{ width: '80px' }} />
+  <span style={{ color: 'white', fontSize: '32px', fontWeight: '600' }}>BlueC</span>
+</div>
         <div style={S.card}>
           <h2 style={S.h2}>Reset Password</h2>
           <p style={{ ...S.muted, textAlign: 'left' }}>Enter your email and we'll send you a reset link.</p>
@@ -285,7 +288,10 @@ const Login = () => {
     <div style={S.page}>
       <VideoBackground />
       <div style={S.content}>
-        <img src={assets.logo_big} alt="" style={S.logo} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+  <img src={assets.logo_icon} alt="" style={{ width: '80px' }} />
+  <span style={{ color: 'white', fontSize: '32px', fontWeight: '600' }}>BlueC</span>
+</div>
         <div style={S.card}>
           <h2 style={S.h2}>Verify Email</h2>
           <p style={S.muted}>Enter the 6-digit OTP sent to<br /><strong style={{ color: 'rgba(255,255,255,0.8)' }}>{email}</strong></p>
@@ -325,7 +331,10 @@ const Login = () => {
       <VideoBackground />
       <TermsModal />
       <div style={S.content}>
-        <img src={assets.logo_big} alt="" style={{ ...S.logo, animation: 'fadeRise 0.6s ease-out both' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+  <img src={assets.logo_icon} alt="" style={{ width: '80px', animation: 'fadeRise 0.6s ease-out both' }} />
+  <span style={{ color: 'white', fontSize: '32px', fontWeight: '600' }}>BlueC</span>
+</div>
         <div style={S.card}>
           <h2 style={S.h2}>{currState === 'Sign Up' ? 'Create account' : 'Welcome back'}</h2>
 
