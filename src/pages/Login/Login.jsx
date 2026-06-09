@@ -17,10 +17,10 @@ The words whose initial letters are capitalized have meanings defined under the 
 Definitions:
 • Affiliate means an entity that controls, is controlled by, or is under common control with a party.
 • Country refers to: Karnataka, India
-• Company refers to BluC.
+• Company refers to BlueC.
 • Device means any device that can access the Service such as a computer, a cell phone or a digital tablet.
 • Service refers to the Website.
-• Website refers to BluC, accessible from https://chat-app-two-hazel.vercel.app/
+• Website refers to BlueC, accessible from https://chat-app-two-hazel.vercel.app/
 • You means the individual accessing or using the Service.
 
 ACKNOWLEDGMENT
