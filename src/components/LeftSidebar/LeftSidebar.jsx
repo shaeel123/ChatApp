@@ -240,7 +240,12 @@ const LeftSidebar = () => {
         <div className="ls-nav">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
   <img src={assets.logo_icon} style={{ width: '35px' }} alt="" />
-  <span style={{ color: 'white', fontSize: '20px', fontWeight: '600' }}>BlueC</span>
+   <span style={{ 
+    color: 'white', 
+    fontSize: '42px', 
+    fontFamily: "'Pacifico', cursive",
+    letterSpacing: '2px'
+  }}>BlueC</span>
 </div>
           <div className="menu" style={{ position: 'relative' }}>
             <img
