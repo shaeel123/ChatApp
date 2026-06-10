@@ -419,7 +419,7 @@ const clearChat = async () => {
   if (!chatUser) {
     return (
       <div className='chat-box chat-welcome'>
-        <video className="welcome-video" src="/BlueC-video.mp4" autoPlay loop playsInline muted={muted} />
+        <video className="welcome-video" src="/BLuec_desktop_app_promo_202606101237.mp4" autoPlay loop playsInline muted={muted} />
         <button className="unmute-btn" onClick={() => setMuted((prev) => !prev)}>
           {muted ? '🔇 Click to unmute' : '🔊 Mute'}
         </button>
