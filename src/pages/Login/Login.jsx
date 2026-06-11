@@ -5,8 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import ReactDOM from 'react-dom'
 
-const VIDEO_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_171521_25968ba2-b594-4b32-aab7-f6b69398a6fa.mp4'
-
+const VIDEO_URL = 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260506_031045_0e1165dd-ab48-46e3-ad3d-5fe77f217647.mp4'
 const TERMS_TEXT = `Terms and Conditions for Chat App
 Last updated: May 23, 2026
 
