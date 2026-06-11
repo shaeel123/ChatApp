@@ -90,7 +90,7 @@ const S = {
   card: {
   background: 'rgba(255,255,255,0.02)',  // ✅ more transparent
   border: '1px solid rgba(255,255,255,0.15)',
-  WebkitBackdropFilter: 'blur(30px)',
+  WebkitBackdropFilter: 'blur(24px)',
   borderRadius: 22,
   padding: '36px 40px',
   display: 'flex', flexDirection: 'column', gap: 18,
