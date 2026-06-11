@@ -88,17 +88,17 @@ const S = {
   },
   logo: { width: 'max(18vw, 160px)', marginBottom: 36 },
   card: {
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    borderRadius: 22,
-    padding: '36px 40px',
-    display: 'flex', flexDirection: 'column', gap: 18,
-    width: '100%', maxWidth: 380,
-    boxShadow: '0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
-    animation: 'fadeRise 0.7s ease-out both',
-  },
+  background: 'rgba(255,255,255,0.02)',  // ✅ more transparent
+  border: '1px solid rgba(255,255,255,0.15)',
+  backdropFilter: 'blur(30px)',           // ✅ more blur
+  WebkitBackdropFilter: 'blur(30px)',
+  borderRadius: 22,
+  padding: '36px 40px',
+  display: 'flex', flexDirection: 'column', gap: 18,
+  width: '100%', maxWidth: 380,
+  boxShadow: '0 24px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12)',
+  animation: 'fadeRise 0.7s ease-out both',
+},
   h2: {
     fontFamily: "'Instrument Serif', serif",
     fontWeight: 400, fontSize: 28, color: 'white',
