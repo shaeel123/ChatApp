@@ -155,6 +155,21 @@ const ProfileUpdate = () => {
 
   return (
     <div className='profile'>
+      {/* ✅ Background video */}
+    <video
+      autoPlay
+      loop
+      muted
+      playsInline
+      style={{
+        position: 'fixed',
+        top: 0, left: 0,
+        width: '100%', height: '100%',
+        objectFit: 'cover',
+        zIndex: 0,
+      }}
+      src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260411_104032_69319010-2458-492b-b04d-b40a5dfa4482.mp4"
+    />
       <div className="profile-container">
 
         {/* ✅ Back to chat button */}
