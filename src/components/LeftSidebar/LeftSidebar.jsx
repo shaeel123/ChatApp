@@ -5,28 +5,105 @@ import { useAppContext } from '../../context/AppContext'
 import { supabase } from '../../config/supabase'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import ReactDOM from 'react-dom'
+import VideoCall from '../VideoCall/VideoCall'
 
 const DEFAULT_AVATAR = assets.avatar_icon
 
 const LeftSidebar = () => {
   const navigate = useNavigate()
-  const { userData, setChatUser, chatUser } = useAppContext()
+  const { userData, setChatUser, chatUser, incomingCall, setIncomingCall } = useAppContext()
   const [query, setQuery] = useState("")
   const [searchResults, setSearchResults] = useState([])
   const [searched, setSearched] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
   const [conversations, setConversations] = useState([])
+  // Incoming call state
+  const [callerProfile, setCallerProfile] = useState(null)
+  const [showIncomingCall, setShowIncomingCall] = useState(false)
+  const [acceptedCall, setAcceptedCall] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
   const channelRef = useRef(null)
   const clearChannelRef = useRef(null)
+  const ringtoneRef = useRef(null)
+
+  // Load current auth user once
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) setCurrentUser(data.user)
+    })
+  }, [])
+
+  // When incomingCall changes (set by AppContext), load caller profile and ring
+  useEffect(() => {
+    if (!incomingCall) {
+      setCallerProfile(null)
+      setShowIncomingCall(false)
+      stopRing()
+      return
+    }
+
+    const load = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, name, avatar_url, email')
+        .eq('id', incomingCall.from)
+        .maybeSingle()
+      if (data) setCallerProfile(data)
+    }
+    load()
+    setShowIncomingCall(true)
+    playRing()
+
+    // Auto-dismiss after 30s if not answered
+    const timer = setTimeout(() => {
+      setIncomingCall(null)
+      stopRing()
+    }, 30000)
+
+    return () => clearTimeout(timer)
+  }, [incomingCall])
+
+  const playRing = () => {
+    try {
+      const audio = new Audio('https://www.soundjay.com/phone/sounds/phone-ringing-1.mp3')
+      audio.loop = true
+      audio.volume = 0.5
+      ringtoneRef.current = audio
+      audio.play().catch(() => {})
+    } catch (_) {}
+  }
+
+  const stopRing = () => {
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause()
+      ringtoneRef.current = null
+    }
+  }
+
+  const handleAcceptCall = () => {
+    stopRing()
+    setShowIncomingCall(false)
+    setAcceptedCall(true)
+  }
+
+  const handleDeclineCall = () => {
+    stopRing()
+    setIncomingCall(null)
+    setShowIncomingCall(false)
+  }
+
+  const handleCallClose = () => {
+    setAcceptedCall(false)
+    setIncomingCall(null)
+  }
 
   const fetchConversations = async () => {
-    // ✅ Get auth user directly — never rely on userData timing
     const { data: authData } = await supabase.auth.getUser()
     const myId = authData?.user?.id
     console.log('🔍 myId:', myId)
     if (!myId) return
 
-    // Get clear timestamps
     let clearMap = {}
     try {
       const { data: clearData } = await supabase
@@ -97,11 +174,9 @@ const LeftSidebar = () => {
     setConversations(result)
   }
 
-  // ✅ Run on mount — catches already logged-in users
   useEffect(() => {
     fetchConversations()
 
-    // ✅ Also re-run when auth state changes (fresh login)
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) fetchConversations()
     })
@@ -109,12 +184,10 @@ const LeftSidebar = () => {
     return () => authListener.subscription.unsubscribe()
   }, [])
 
-  // ✅ Also re-run when userData loads (belt + suspenders)
   useEffect(() => {
     if (userData?.id) fetchConversations()
   }, [userData?.id])
 
-  // ✅ Realtime subscriptions
   useEffect(() => {
     const setupRealtime = async () => {
       const { data: authData } = await supabase.auth.getUser()
@@ -239,14 +312,14 @@ const LeftSidebar = () => {
       <div className="ls-top">
         <div className="ls-nav">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-  <img src={assets.logo_icon} style={{ width: '35px' }} alt="" />
-   <span style={{ 
-    color: 'white', 
-    fontSize: '42px', 
-    fontFamily: "'Pacifico', cursive",
-    letterSpacing: '2px'
-  }}>BlueC</span>
-</div>
+            <img src={assets.logo_icon} style={{ width: '35px' }} alt="" />
+            <span style={{
+              color: 'white',
+              fontSize: '42px',
+              fontFamily: "'Pacifico', cursive",
+              letterSpacing: '2px'
+            }}>BlueC</span>
+          </div>
           <div className="menu" style={{ position: 'relative' }}>
             <img
               src={assets.menu_icon}
@@ -279,6 +352,50 @@ const LeftSidebar = () => {
           )}
         </div>
       </div>
+
+      {/* ── Incoming call banner ── */}
+      {showIncomingCall && callerProfile && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 14px',
+          background: 'linear-gradient(90deg, #1a1a2e, #0f3460)',
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          animation: 'incoming-ring 0.6s ease-in-out infinite alternate',
+        }}>
+          <img
+            src={callerProfile.avatar_url || DEFAULT_AVATAR}
+            alt=""
+            style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid #4caf50' }}
+            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR }}
+          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ color: 'white', fontWeight: 600, fontSize: 13, margin: 0 }}>
+              {callerProfile.name || callerProfile.email || 'Unknown'}
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, margin: 0 }}>📹 Incoming video call…</p>
+          </div>
+          <button
+            onClick={handleAcceptCall}
+            style={{
+              background: '#4caf50', color: 'white', border: 'none',
+              borderRadius: 20, padding: '6px 12px', cursor: 'pointer',
+              fontSize: 12, fontWeight: 600,
+            }}
+          >
+            Accept
+          </button>
+          <button
+            onClick={handleDeclineCall}
+            style={{
+              background: '#e53935', color: 'white', border: 'none',
+              borderRadius: 20, padding: '6px 12px', cursor: 'pointer',
+              fontSize: 12, fontWeight: 600,
+            }}
+          >
+            Decline
+          </button>
+        </div>
+      )}
 
       <div className="ls-list">
         {query.trim() ? (
@@ -350,6 +467,16 @@ const LeftSidebar = () => {
           )
         )}
       </div>
+
+      {/* ── Accepted incoming call portal ── */}
+      {acceptedCall && currentUser && callerProfile && ReactDOM.createPortal(
+        <VideoCall
+          currentUser={currentUser}
+          chatUser={callerProfile}
+          onClose={handleCallClose}
+        />,
+        document.body
+      )}
     </div>
   )
 }

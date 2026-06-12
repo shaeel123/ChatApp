@@ -1,15 +1,19 @@
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, useRef } from "react"
 import { supabase } from "../config/supabase"
 
 export const AppContext = createContext({
   userData: null,
   setUserData: () => {},
-  loadUserData: () => {}
+  loadUserData: () => {},
+  incomingCall: null,
+  setIncomingCall: () => {},
 })
 
 export const AppContextProvider = ({ children }) => {
   const [userData, setUserData] = useState(null)
   const [chatUser, setChatUser] = useState(null)
+  const [incomingCall, setIncomingCall] = useState(null)
+  const callChannelRef = useRef(null)
 
   const setOnlineStatus = async (userId, status) => {
     await supabase
@@ -31,7 +35,6 @@ export const AppContextProvider = ({ children }) => {
     if (error) { console.error("Error loading profile:", error); return }
     if (!profile) return
 
-    // ✅ Sync email: if auth email differs from profile email, update profiles table
     if (authData.user.email && authData.user.email !== profile.email) {
       await supabase
         .from('profiles')
@@ -45,24 +48,44 @@ export const AppContextProvider = ({ children }) => {
     }
 
     await setOnlineStatus(authData.user.id, true)
-
     setUserData(profile)
+
+    // Subscribe to incoming video call signals for this user
+    subscribeToCallSignals(authData.user.id)
+  }
+
+  const subscribeToCallSignals = (myId) => {
+    if (callChannelRef.current) {
+      supabase.removeChannel(callChannelRef.current)
+    }
+
+    callChannelRef.current = supabase
+      .channel(`incoming-call-${myId}`)
+      .on('broadcast', { event: 'incoming-call' }, ({ payload }) => {
+        // Only show if not already in a call
+        setIncomingCall(prev => prev ? prev : payload)
+      })
+      .subscribe()
   }
 
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-  // ✅ don't interfere on reset password page
-  if (window.location.pathname === '/reset-password') return
+      if (window.location.pathname === '/reset-password') return
 
-  if (session?.user) {
-    await setOnlineStatus(session.user.id, true)
-    setChatUser(null)
-    loadUserData()
-  } else {
-    setUserData(null)
-    setChatUser(null)
-  }
-})
+      if (session?.user) {
+        await setOnlineStatus(session.user.id, true)
+        setChatUser(null)
+        loadUserData()
+      } else {
+        setUserData(null)
+        setChatUser(null)
+        setIncomingCall(null)
+        if (callChannelRef.current) {
+          supabase.removeChannel(callChannelRef.current)
+          callChannelRef.current = null
+        }
+      }
+    })
 
     loadUserData()
 
@@ -78,11 +101,16 @@ export const AppContextProvider = ({ children }) => {
     return () => {
       listener.subscription.unsubscribe()
       window.removeEventListener('beforeunload', handleBeforeUnload)
+      if (callChannelRef.current) supabase.removeChannel(callChannelRef.current)
     }
   }, [])
 
   return (
-    <AppContext.Provider value={{ userData, setUserData, loadUserData, chatUser, setChatUser }}>
+    <AppContext.Provider value={{
+      userData, setUserData, loadUserData,
+      chatUser, setChatUser,
+      incomingCall, setIncomingCall,
+    }}>
       {children}
     </AppContext.Provider>
   )

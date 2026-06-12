@@ -138,3 +138,8 @@
   .friend-name { font-size: 15px; }
   .friend-avatar-wrapper img { width: 45px; height: 45px; }
 }
+/* ── Incoming call banner ring animation ── */
+@keyframes incoming-ring {
+  from { background: linear-gradient(90deg, #1a1a2e, #0f3460); }
+  to   { background: linear-gradient(90deg, #0f3460, #16213e); }
+}

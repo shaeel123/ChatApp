@@ -5,6 +5,7 @@ import { supabase } from '../../config/supabase'
 import { useAppContext } from '../../context/AppContext'
 import EmojiPicker from 'emoji-picker-react'
 import ReactDOM from 'react-dom'
+import VideoCall from '../VideoCall/VideoCall'
 
 const DEFAULT_AVATAR = assets.avatar_icon
 
@@ -42,6 +43,8 @@ const MiddleBox = () => {
   const [uploading, setUploading] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [clearing, setClearing] = useState(false)
+  // ── Video call ──────────────────────────────────────
+  const [showVideoCall, setShowVideoCall] = useState(false)
 
   const messagesEndRef = useRef(null)
   const chatMsgRef = useRef(null)
@@ -89,7 +92,6 @@ const MiddleBox = () => {
   }
 
  const fetchMessages = async (myId, otherId) => {
-  // ✅ Declare clearedAt locally — never leak from outer scope
   let clearedAt = null
   try {
     const { data: clearData } = await supabase
@@ -321,7 +323,6 @@ const clearChat = async () => {
   if (!cu || !chatUser) return
   setClearing(true)
 
-  // Step 1: Get previous cleared_at
   let clearedAt = null
   try {
     const { data: existing } = await supabase
@@ -333,19 +334,16 @@ const clearChat = async () => {
     clearedAt = existing?.cleared_at || null
   } catch (_) {}
 
-  // Step 2: Fetch only MY sent messages with media
   const { data: myMsgs } = await supabase
     .from('messages')
     .select('id, image_url, video_url, created_at')
     .eq('user_id', cu.id)
     .eq('receiver_id', chatUser.id)
 
-  // Only messages visible to me (after my last clear)
   const visibleMyMsgs = clearedAt
     ? (myMsgs || []).filter(m => new Date(m.created_at + 'Z') > new Date(clearedAt))
     : (myMsgs || [])
 
-  // Step 3: Delete only MY media files from storage
   const myFilePaths = visibleMyMsgs
     .map(m => {
       const url = m.image_url || m.video_url
@@ -363,7 +361,6 @@ const clearChat = async () => {
     else console.log('✅ Deleted media files:', myFilePaths.length)
   }
 
-  // Step 4: ✅ Store cleared_at for THIS user ONLY — does NOT delete any messages
   const { error } = await supabase
     .from('chat_clears')
     .upsert({
@@ -381,6 +378,7 @@ const clearChat = async () => {
   setClearing(false)
   setShowClearConfirm(false)
 }
+
   const copyMessage = (text) => {
     navigator.clipboard.writeText(text)
     setHoveredMsgId(null)
@@ -442,6 +440,15 @@ const clearChat = async () => {
           {chatUser?.is_online && <img className='dot' src={assets.green_dot} alt="" />}
         </p>
 
+        {/* ── Video call button ── */}
+        <span
+          title="Video call"
+          onClick={() => setShowVideoCall(true)}
+          style={{ cursor: 'pointer', fontSize: '20px', marginRight: '4px' }}
+        >
+          📹
+        </span>
+
         <span
           title="Clear my messages"
           onClick={() => setShowClearConfirm(true)}
@@ -485,6 +492,7 @@ const clearChat = async () => {
         </div>
       </div>
 
+      {/* ── Clear chat confirm modal ── */}
       {showClearConfirm && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setShowClearConfirm(false)}>
           <div onClick={e => e.stopPropagation()} style={{
@@ -494,7 +502,7 @@ const clearChat = async () => {
             <div style={{ fontSize: 36, marginBottom: 10 }}>🗑️</div>
             <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>Clear your messages?</p>
             <p style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>
-              This will delete all messages in this chat for you. This cannot be undone.After this Just "REFRESH ONCE"
+              This will delete all messages in this chat for you. This cannot be undone. After this Just "REFRESH ONCE"
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button
@@ -672,6 +680,7 @@ const clearChat = async () => {
         <img src={assets.send_button} alt="" onClick={sendMessage} />
       </div>
 
+      {/* ── Image preview portal ── */}
       {previewImg && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setPreviewImg(null)}>
           <div className="img-preview-box" onClick={(e) => e.stopPropagation()}>
@@ -682,6 +691,7 @@ const clearChat = async () => {
         document.body
       )}
 
+      {/* ── Video preview portal ── */}
       {previewVideo && ReactDOM.createPortal(
         <div className="img-preview-overlay" onClick={() => setPreviewVideo(null)}>
           <div className="img-preview-box video-preview-box" onClick={(e) => e.stopPropagation()}>
@@ -689,6 +699,16 @@ const clearChat = async () => {
             <button className="img-preview-close" onClick={() => setPreviewVideo(null)}>✕</button>
           </div>
         </div>,
+        document.body
+      )}
+
+      {/* ── Video call portal ── */}
+      {showVideoCall && user && ReactDOM.createPortal(
+        <VideoCall
+          currentUser={user}
+          chatUser={chatUser}
+          onClose={() => setShowVideoCall(false)}
+        />,
         document.body
       )}
     </div>
