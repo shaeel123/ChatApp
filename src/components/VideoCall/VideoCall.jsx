@@ -9,7 +9,6 @@ const ICE_SERVERS = {
   ]
 }
 
-// ── Filters ──────────────────────────────────────────────────────────────────
 const FILTERS = [
   { id: 'none',      label: 'Normal',  emoji: '😐', css: 'none' },
   { id: 'grayscale', label: 'B&W',     emoji: '🎞️', css: 'grayscale(1)' },
@@ -17,7 +16,7 @@ const FILTERS = [
   { id: 'warm',      label: 'Warm',    emoji: '🌅', css: 'saturate(1.6) hue-rotate(-20deg) brightness(1.1)' },
   { id: 'cold',      label: 'Icy',     emoji: '🧊', css: 'saturate(0.8) hue-rotate(160deg) brightness(1.05)' },
   { id: 'neon',      label: 'Neon',    emoji: '🌈', css: 'saturate(3) contrast(1.4) brightness(1.1)' },
-  { id: 'blur',      label: 'Dreamy',  emoji: '💭', css: 'blur(2px) brightness(1.1)' },
+  { id: 'dreamy',    label: 'Dreamy',  emoji: '💭', css: 'blur(2px) brightness(1.1)' },
   { id: 'invert',    label: 'Invert',  emoji: '🔄', css: 'invert(0.85)' },
   { id: 'comic',     label: 'Comic',   emoji: '💥', css: 'contrast(2) saturate(2.5)' },
   { id: 'pink',      label: 'Pink',    emoji: '🌸', css: 'sepia(0.4) saturate(2.5) hue-rotate(300deg)' },
@@ -25,44 +24,30 @@ const FILTERS = [
   { id: 'dark',      label: 'Dark',    emoji: '🌑', css: 'brightness(0.45) contrast(1.6)' },
 ]
 
-// ── Backgrounds ───────────────────────────────────────────────────────────────
 const BACKGROUNDS = [
-  { id: 'none',      label: 'None',      emoji: '🚫',  type: 'none' },
-  { id: 'blur',      label: 'Blur BG',   emoji: '🌫️',  type: 'blur' },
-  { id: 'beach',     label: 'Beach',     emoji: '🏖️',  type: 'image', value: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1280&q=80' },
-  { id: 'mountains', label: 'Mountains', emoji: '🏔️',  type: 'image', value: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1280&q=80' },
-  { id: 'city',      label: 'City',      emoji: '🌆',  type: 'image', value: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1280&q=80' },
-  { id: 'forest',    label: 'Forest',    emoji: '🌲',  type: 'image', value: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1280&q=80' },
-  { id: 'office',    label: 'Office',    emoji: '🏢',  type: 'image', value: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1280&q=80' },
-  { id: 'galaxy',    label: 'Galaxy',    emoji: '🌌',  type: 'image', value: 'https://images.unsplash.com/photo-1543722530-d2c3201371e7?w=1280&q=80' },
-  { id: 'cafe',      label: 'Café',      emoji: '☕',  type: 'image', value: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1280&q=80' },
-  { id: 'space',     label: 'Space',     emoji: '🚀',  type: 'color', value: ['#0f0c29', '#302b63', '#24243e'] },
-  { id: 'purple',    label: 'Purple',    emoji: '💜',  type: 'color', value: ['#6a11cb', '#2575fc'] },
-  { id: 'sunset',    label: 'Sunset',    emoji: '🌇',  type: 'color', value: ['#f7797d', '#FBD786', '#C6FFDD'] },
+  { id: 'none',      label: 'None',      emoji: '🚫', type: 'none' },
+  { id: 'blur',      label: 'Blur',      emoji: '🌫️', type: 'blur',  blurAmount: 16 },
+  { id: 'beach',     label: 'Beach',     emoji: '🏖️', type: 'image', value: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1280&q=80' },
+  { id: 'mountains', label: 'Mountains', emoji: '🏔️', type: 'image', value: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1280&q=80' },
+  { id: 'city',      label: 'City',      emoji: '🌆', type: 'image', value: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1280&q=80' },
+  { id: 'forest',    label: 'Forest',    emoji: '🌲', type: 'image', value: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=1280&q=80' },
+  { id: 'office',    label: 'Office',    emoji: '🏢', type: 'image', value: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1280&q=80' },
+  { id: 'galaxy',    label: 'Galaxy',    emoji: '🌌', type: 'image', value: 'https://images.unsplash.com/photo-1543722530-d2c3201371e7?w=1280&q=80' },
+  { id: 'cafe',      label: 'Café',      emoji: '☕', type: 'image', value: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1280&q=80' },
+  { id: 'space',     label: 'Space',     emoji: '🚀', type: 'gradient', colors: ['#0f0c29', '#302b63', '#24243e'] },
+  { id: 'purple',    label: 'Purple',    emoji: '💜', type: 'gradient', colors: ['#6a11cb', '#2575fc'] },
+  { id: 'sunset',    label: 'Sunset',    emoji: '🌇', type: 'gradient', colors: ['#f7797d', '#FBD786', '#C6FFDD'] },
 ]
 
-// ── Load MediaPipe via CDN script tag ─────────────────────────────────────────
-const loadMediaPipe = () => new Promise((resolve, reject) => {
-  if (window.SelfieSegmentation) { resolve(window.SelfieSegmentation); return }
-
-  const script = document.createElement('script')
-  script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js'
-  script.crossOrigin = 'anonymous'
-  script.onload = () => {
-    if (window.SelfieSegmentation) resolve(window.SelfieSegmentation)
-    else reject(new Error('SelfieSegmentation not found after script load'))
-  }
-  script.onerror = () => reject(new Error('Failed to load MediaPipe script'))
-  document.head.appendChild(script)
-})
+const W = 640, H = 480
 
 const VideoCall = ({ currentUser, chatUser, onClose }) => {
-  const localVideoRef      = useRef(null)   // hidden raw camera
+  // Refs
+  const localVideoRef      = useRef(null)
   const remoteVideoRef     = useRef(null)
-  const canvasRef          = useRef(null)   // processed output (PiP + stream)
-  const bgCanvasRef        = useRef(null)   // offscreen: blurred bg for blur mode
-  const segmentationRef    = useRef(null)   // MediaPipe instance
-  const bgImageRef         = useRef(null)   // preloaded bg Image
+  const mainCanvasRef      = useRef(null)   // final output shown & streamed
+  const bgCanvasRef        = useRef(null)   // offscreen: holds the background frame
+  const rafRef             = useRef(null)
   const pcRef              = useRef(null)
   const localStreamRef     = useRef(null)
   const processedStreamRef = useRef(null)
@@ -70,12 +55,16 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
   const makingOfferRef     = useRef(false)
   const ignoreOfferRef     = useRef(false)
   const politeRef          = useRef(false)
-  const rafRef             = useRef(null)
-  const segReadyRef        = useRef(false)
+  const timerRef           = useRef(null)
+  const bgImageRef         = useRef(null)
+  const bgLoadedRef        = useRef(false)
   const activeFilterRef    = useRef(FILTERS[0])
   const activeBgRef        = useRef(BACKGROUNDS[0])
-  const timerRef           = useRef(null)
+  const segWorkerRef       = useRef(null)   // BodyPix worker
+  const maskRef            = useRef(null)   // latest segmentation mask
+  const segActiveRef       = useRef(false)
 
+  // State
   const [callStatus, setCallStatus]     = useState('connecting')
   const [micOn, setMicOn]               = useState(true)
   const [camOn, setCamOn]               = useState(true)
@@ -83,194 +72,238 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
   const [showPanel, setShowPanel]       = useState(null)
   const [activeFilter, setActiveFilter] = useState(FILTERS[0])
   const [activeBg, setActiveBg]         = useState(BACKGROUNDS[0])
-  const [segLoading, setSegLoading]     = useState(false)
-  const [segError, setSegError]         = useState(false)
+  const [segStatus, setSegStatus]       = useState('idle') // idle | loading | ready | error
 
   const roomId = [currentUser.id, chatUser.id].sort().join('_')
 
-  const W = 640, H = 480
-
-  // ── Keep refs in sync with state ─────────────────────────────────────────
+  // Keep refs in sync
   useEffect(() => { activeFilterRef.current = activeFilter }, [activeFilter])
   useEffect(() => { activeBgRef.current = activeBg }, [activeBg])
 
-  // ── Preload background image ──────────────────────────────────────────────
+  // ── Load bg image whenever bg changes ────────────────────────────────────
   useEffect(() => {
+    bgLoadedRef.current = false
+    bgImageRef.current = null
     if (activeBg.type === 'image') {
       const img = new Image()
       img.crossOrigin = 'anonymous'
       img.src = activeBg.value
-      img.onload  = () => { bgImageRef.current = img }
-      img.onerror = () => { bgImageRef.current = null }
-    } else {
-      bgImageRef.current = null
+      img.onload  = () => { bgImageRef.current = img; bgLoadedRef.current = true }
+      img.onerror = () => { bgLoadedRef.current = false }
     }
   }, [activeBg])
 
-  // ── MediaPipe segmentation result handler ─────────────────────────────────
-  const onSegmentationResults = useCallback((results) => {
-    const canvas = canvasRef.current
-    const video  = localVideoRef.current
-    if (!canvas || !video) return
+  // ── BodyPix segmentation via tf.js (lazy loaded) ─────────────────────────
+  const loadBodyPix = useCallback(async () => {
+    if (segActiveRef.current) return
+    setSegStatus('loading')
+    try {
+      // Dynamically import tf + bodypix
+      const tf = await import('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js').catch(() => null)
+      const bp = await import('https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.2.0/dist/body-pix.min.js').catch(() => null)
 
-    const ctx = canvas.getContext('2d')
-    ctx.clearRect(0, 0, W, H)
-    ctx.save()
+      if (!window.bodyPix) throw new Error('BodyPix not available')
 
-    // Mirror (selfie)
-    ctx.scale(-1, 1)
-    ctx.translate(-W, 0)
+      const net = await window.bodyPix.load({
+        architecture: 'MobileNetV1',
+        outputStride: 16,
+        multiplier: 0.75,
+        quantBytes: 2,
+      })
 
-    const bg = activeBgRef.current
-    const filter = activeFilterRef.current
+      segActiveRef.current = true
+      setSegStatus('ready')
 
-    if (bg.type === 'none') {
-      // No background replacement — just draw video with filter
-      ctx.filter = filter.css
-      ctx.drawImage(video, 0, 0, W, H)
+      // Run segmentation loop independently — never blocks the draw loop
+      const segLoop = async () => {
+        const video = localVideoRef.current
+        if (video && video.readyState >= 2 && segActiveRef.current) {
+          try {
+            const seg = await net.segmentPerson(video, {
+              internalResolution: 'medium',
+              segmentationThreshold: 0.7,
+              maxDetections: 1,
+            })
+            maskRef.current = seg
+          } catch (_) {}
+        }
+        if (segActiveRef.current) setTimeout(segLoop, 80) // ~12fps segmentation
+      }
+      segLoop()
+
+    } catch (err) {
+      console.error('BodyPix load error:', err)
+      setSegStatus('error')
+    }
+  }, [])
+
+  // ── Main canvas draw loop — NEVER stops, always draws camera ─────────────
+  const startDrawLoop = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+
+    const draw = () => {
+      const video  = localVideoRef.current
+      const canvas = mainCanvasRef.current
+      if (!canvas) { rafRef.current = requestAnimationFrame(draw); return }
+
+      const ctx = canvas.getContext('2d')
+      const bg  = activeBgRef.current
+      const filter = activeFilterRef.current
+
+      ctx.save()
+      ctx.scale(-1, 1)           // mirror selfie
+      ctx.translate(-W, 0)
+
+      if (!video || video.readyState < 2) {
+        // Camera not ready yet — draw black
+        ctx.fillStyle = '#111'
+        ctx.fillRect(0, 0, W, H)
+        ctx.restore()
+        rafRef.current = requestAnimationFrame(draw)
+        return
+      }
+
+      if (bg.type === 'none') {
+        // ── No background: just draw video with filter ───────────────────
+        ctx.filter = filter.css
+        ctx.drawImage(video, 0, 0, W, H)
+
+      } else if (maskRef.current && segActiveRef.current) {
+        // ── Segmentation ready: real background removal ──────────────────
+        const mask = maskRef.current
+        const maskData = mask.data // Uint8Array, 1 per pixel, 1=person 0=bg
+
+        // Step 1 — draw background
+        ctx.filter = 'none'
+        drawBackground(ctx, bg, video)
+
+        // Step 2 — draw person pixels only using mask
+        // Use a temp canvas to isolate person
+        const tmp = document.createElement('canvas')
+        tmp.width = W; tmp.height = H
+        const tCtx = tmp.getContext('2d')
+        tCtx.filter = filter.css
+        tCtx.drawImage(video, 0, 0, W, H)
+
+        // Get person pixels and blank out background
+        const imgData = tCtx.getImageData(0, 0, W, H)
+        const pixels  = imgData.data
+
+        // maskRef data is at segmentation resolution — scale indices
+        const mW = mask.width, mH = mask.height
+        for (let y = 0; y < H; y++) {
+          for (let x = 0; x < W; x++) {
+            const mx = Math.floor((x / W) * mW)
+            const my = Math.floor((y / H) * mH)
+            const mi = my * mW + mx
+            if (!maskData[mi]) {
+              // Background pixel — make transparent
+              pixels[(y * W + x) * 4 + 3] = 0
+            }
+          }
+        }
+        tCtx.putImageData(imgData, 0, 0)
+
+        // Step 3 — composite person over background
+        ctx.filter = 'none'
+        ctx.drawImage(tmp, 0, 0, W, H)
+
+      } else {
+        // ── Segmentation loading/unavailable: show background behind video
+        // as a subtle preview (split: bg left, video right with opacity)
+        ctx.filter = 'none'
+        drawBackground(ctx, bg, video)
+        ctx.filter = filter.css
+        ctx.globalAlpha = 0.85
+        ctx.drawImage(video, 0, 0, W, H)
+        ctx.globalAlpha = 1
+      }
+
       ctx.restore()
-      return
+      rafRef.current = requestAnimationFrame(draw)
     }
 
-    // ── Step 1: Draw background ──────────────────────────────
-    ctx.filter = 'none'
+    rafRef.current = requestAnimationFrame(draw)
+  }, [])
+
+  const drawBackground = (ctx, bg, video) => {
     if (bg.type === 'blur') {
-      // Use the blurred bg canvas
-      const bgC = bgCanvasRef.current
-      if (bgC) ctx.drawImage(bgC, 0, 0, W, H)
-      else {
-        ctx.filter = 'blur(20px) brightness(0.7)'
-        ctx.drawImage(video, 0, 0, W, H)
-        ctx.filter = 'none'
-      }
+      ctx.filter = `blur(${bg.blurAmount}px) brightness(0.7)`
+      ctx.drawImage(video, 0, 0, W, H)
+      ctx.filter = 'none'
     } else if (bg.type === 'image' && bgImageRef.current) {
       ctx.drawImage(bgImageRef.current, 0, 0, W, H)
-    } else if (bg.type === 'color') {
+    } else if (bg.type === 'gradient') {
       const grad = ctx.createLinearGradient(0, 0, W, H)
-      const colors = bg.value
-      colors.forEach((c, i) => grad.addColorStop(i / Math.max(colors.length - 1, 1), c))
+      bg.colors.forEach((c, i) => grad.addColorStop(i / Math.max(bg.colors.length - 1, 1), c))
       ctx.fillStyle = grad
       ctx.fillRect(0, 0, W, H)
+    } else {
+      ctx.fillStyle = '#1a1a2a'
+      ctx.fillRect(0, 0, W, H)
     }
+  }
 
-    // ── Step 2: Use segmentation mask to cut out person ──────
-    // globalCompositeOperation 'destination-in' keeps only the overlap
-    // with the mask — i.e. the person silhouette
-    ctx.filter = filter.css
-    ctx.globalCompositeOperation = 'destination-in'
-    ctx.drawImage(results.segmentationMask, 0, 0, W, H)
-
-    // ── Step 3: Draw the person (camera) on top of the mask ──
-    ctx.globalCompositeOperation = 'destination-over'
-    ctx.filter = filter.css
-    ctx.drawImage(video, 0, 0, W, H)
-
-    ctx.restore()
-  }, [])
-
-  // ── Build blurred bg canvas (updated every ~500ms) ────────────────────────
+  // ── When bg changes, trigger segmentation loading if needed ──────────────
   useEffect(() => {
-    if (activeBg.type !== 'blur') return
-    const video = localVideoRef.current
-    if (!video) return
-
-    const bgCanvas = document.createElement('canvas')
-    bgCanvas.width = W; bgCanvas.height = H
-    bgCanvasRef.current = bgCanvas
-    const bgCtx = bgCanvas.getContext('2d')
-
-    const updateBg = () => {
-      if (video.readyState >= 2) {
-        bgCtx.filter = 'blur(24px) brightness(0.65)'
-        bgCtx.drawImage(video, 0, 0, W, H)
-      }
+    if (activeBg.type !== 'none' && segStatus === 'idle' && localStreamRef.current) {
+      loadSegmentation()
     }
-    const id = setInterval(updateBg, 500)
-    return () => clearInterval(id)
-  }, [activeBg.type])
+  }, [activeBg])
 
-  // ── Init MediaPipe when a bg-replacement mode is first needed ─────────────
-  useEffect(() => {
-    if (activeBg.type === 'none') return
-    if (segReadyRef.current || segmentationRef.current) return
-    if (!localStreamRef.current) return
+  const loadSegmentation = useCallback(async () => {
+    if (segActiveRef.current || segStatus === 'loading') return
+    setSegStatus('loading')
+    try {
+      // Load scripts sequentially
+      await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js')
+      await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.2.0/dist/body-pix.min.js')
 
-    const init = async () => {
-      setSegLoading(true)
-      try {
-        const SelfieSegmentation = await loadMediaPipe()
-        const seg = new SelfieSegmentation({ locateFile: (f) =>
-          `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`
-        })
-        seg.setOptions({ modelSelection: 1, selfieMode: false })
-        seg.onResults(onSegmentationResults)
-        await seg.initialize()
-        segmentationRef.current = seg
-        segReadyRef.current = true
-        setSegLoading(false)
-        startSegLoop()
-      } catch (err) {
-        console.error('MediaPipe load error:', err)
-        setSegError(true)
-        setSegLoading(false)
+      if (!window.bodyPix) throw new Error('bodyPix not on window')
+
+      const net = await window.bodyPix.load({
+        architecture: 'MobileNetV1',
+        outputStride: 16,
+        multiplier: 0.75,
+        quantBytes: 2,
+      })
+
+      segActiveRef.current = true
+      segWorkerRef.current = net
+      setSegStatus('ready')
+
+      const segLoop = async () => {
+        const video = localVideoRef.current
+        if (video && video.readyState >= 2 && segActiveRef.current) {
+          try {
+            const seg = await net.segmentPerson(video, {
+              internalResolution: 'medium',
+              segmentationThreshold: 0.65,
+              maxDetections: 1,
+            })
+            maskRef.current = seg
+          } catch (_) {}
+        }
+        if (segActiveRef.current) setTimeout(segLoop, 80)
       }
+      segLoop()
+
+    } catch (err) {
+      console.error('Segmentation load failed:', err)
+      setSegStatus('error')
     }
-    init()
-  }, [activeBg, onSegmentationResults])
+  }, [segStatus])
 
-  // ── Segmentation loop (sends frames to MediaPipe) ─────────────────────────
-  const startSegLoop = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+  const loadScript = (src) => new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return }
+    const s = document.createElement('script')
+    s.src = src
+    s.onload = resolve
+    s.onerror = reject
+    document.head.appendChild(s)
+  })
 
-    const loop = async () => {
-      const video = localVideoRef.current
-      const seg   = segmentationRef.current
-
-      if (video && video.readyState >= 2 && seg && segReadyRef.current) {
-        try { await seg.send({ image: video }) } catch (_) {}
-      } else if (!segReadyRef.current) {
-        // Fallback render when seg not ready
-        drawFallback()
-      }
-      rafRef.current = requestAnimationFrame(loop)
-    }
-    rafRef.current = requestAnimationFrame(loop)
-  }, [])
-
-  // ── Fallback: draw raw video with filter (no bg removal) ─────────────────
-  const drawFallback = useCallback(() => {
-    const canvas = canvasRef.current
-    const video  = localVideoRef.current
-    if (!canvas || !video || video.readyState < 2) return
-    const ctx = canvas.getContext('2d')
-    ctx.save()
-    ctx.scale(-1, 1)
-    ctx.translate(-W, 0)
-    ctx.filter = activeFilterRef.current.css
-    ctx.drawImage(video, 0, 0, W, H)
-    ctx.restore()
-  }, [])
-
-  // ── When bg changes: restart loop appropriately ───────────────────────────
-  useEffect(() => {
-    if (!localStreamRef.current) return
-
-    if (rafRef.current) cancelAnimationFrame(rafRef.current)
-
-    if (activeBg.type === 'none') {
-      // Just run a simple draw loop (no MediaPipe)
-      const simpleLoop = () => {
-        drawFallback()
-        rafRef.current = requestAnimationFrame(simpleLoop)
-      }
-      rafRef.current = requestAnimationFrame(simpleLoop)
-    } else if (segReadyRef.current) {
-      startSegLoop()
-    }
-    // else: init effect above will call startSegLoop once MediaPipe loads
-  }, [activeBg, activeFilter, drawFallback, startSegLoop])
-
-  // ── Main call setup ───────────────────────────────────────────────────────
+  // ── Call setup ────────────────────────────────────────────────────────────
   useEffect(() => {
     startCall()
     return () => cleanup()
@@ -283,47 +316,41 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
     return () => clearInterval(timerRef.current)
   }, [callStatus])
 
-  const formatDuration = (secs) => {
-    const m = String(Math.floor(secs / 60)).padStart(2, '0')
-    const s = String(secs % 60).padStart(2, '0')
-    return `${m}:${s}`
+  const formatDuration = (s) => {
+    const m = String(Math.floor(s / 60)).padStart(2, '0')
+    const sec = String(s % 60).padStart(2, '0')
+    return `${m}:${sec}`
   }
 
   const startCall = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: W, height: H, facingMode: 'user' },
-        audio: true
+        audio: true,
       })
       localStreamRef.current = stream
 
-      // Attach raw stream to hidden video
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream
-        await localVideoRef.current.play().catch(() => {})
-      }
+      const video = localVideoRef.current
+      video.srcObject = stream
+      video.onloadedmetadata = () => video.play().catch(() => {})
 
-      // Setup canvas
-      const canvas = canvasRef.current
-      canvas.width = W; canvas.height = H
+      // Setup output canvas
+      const canvas = mainCanvasRef.current
+      canvas.width = W
+      canvas.height = H
 
-      // Start simple fallback loop immediately
-      const simpleLoop = () => {
-        drawFallback()
-        rafRef.current = requestAnimationFrame(simpleLoop)
-      }
-      rafRef.current = requestAnimationFrame(simpleLoop)
+      // Start draw loop immediately — camera shows right away
+      startDrawLoop()
 
-      // Capture canvas as WebRTC stream
+      // Capture canvas stream for WebRTC
       const canvasStream = canvas.captureStream(25)
-      // Add audio from real mic
       stream.getAudioTracks().forEach(t => canvasStream.addTrack(t))
       processedStreamRef.current = canvasStream
 
-      // WebRTC peer connection
+      // WebRTC
       const pc = new RTCPeerConnection(ICE_SERVERS)
       pcRef.current = pc
-      canvasStream.getTracks().forEach(track => pc.addTrack(track, canvasStream))
+      canvasStream.getTracks().forEach(t => pc.addTrack(t, canvasStream))
 
       pc.ontrack = (e) => {
         if (remoteVideoRef.current && e.streams[0]) {
@@ -333,7 +360,7 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
       }
 
       pc.oniceconnectionstatechange = () => {
-        if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+        if (['disconnected', 'failed'].includes(pc.iceConnectionState)) {
           setCallStatus('ended')
         }
       }
@@ -347,13 +374,14 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
       channel
         .on('broadcast', { event: 'offer' }, async ({ payload }) => {
           if (payload.to !== currentUser.id) return
-          const offerCollision = makingOfferRef.current || pc.signalingState !== 'stable'
-          ignoreOfferRef.current = !politeRef.current && offerCollision
+          const collision = makingOfferRef.current || pc.signalingState !== 'stable'
+          ignoreOfferRef.current = !politeRef.current && collision
           if (ignoreOfferRef.current) return
           await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp))
           const answer = await pc.createAnswer()
           await pc.setLocalDescription(answer)
-          channel.send({ type: 'broadcast', event: 'answer', payload: { sdp: answer, to: payload.from, from: currentUser.id } })
+          channel.send({ type: 'broadcast', event: 'answer',
+            payload: { sdp: answer, to: payload.from, from: currentUser.id } })
         })
         .on('broadcast', { event: 'answer' }, async ({ payload }) => {
           if (payload.to !== currentUser.id) return
@@ -371,23 +399,20 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
           setTimeout(() => onClose(), 1500)
         })
         .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
-            const callerCh = supabase.channel(`incoming-call-${chatUser.id}`)
-            await callerCh.subscribe()
-            await callerCh.send({
-              type: 'broadcast', event: 'incoming-call',
-              payload: { from: currentUser.id, callerName: currentUser.email, roomId }
-            })
-            supabase.removeChannel(callerCh)
-            if (!politeRef.current) await sendOffer(pc, channel)
-          }
+          if (status !== 'SUBSCRIBED') return
+          const callerCh = supabase.channel(`incoming-call-${chatUser.id}`)
+          await callerCh.subscribe()
+          await callerCh.send({
+            type: 'broadcast', event: 'incoming-call',
+            payload: { from: currentUser.id, callerName: currentUser.email, roomId }
+          })
+          supabase.removeChannel(callerCh)
+          if (!politeRef.current) await sendOffer(pc, channel)
         })
 
       pc.onicecandidate = ({ candidate }) => {
-        if (candidate) channel.send({
-          type: 'broadcast', event: 'ice-candidate',
-          payload: { candidate, to: chatUser.id, from: currentUser.id }
-        })
+        if (candidate) channel.send({ type: 'broadcast', event: 'ice-candidate',
+          payload: { candidate, to: chatUser.id, from: currentUser.id } })
       }
 
       pc.onnegotiationneeded = async () => {
@@ -414,8 +439,8 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
   const cleanup = () => {
     clearInterval(timerRef.current)
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    if (segmentationRef.current) { segmentationRef.current.close?.(); segmentationRef.current = null }
-    segReadyRef.current = false
+    segActiveRef.current = false
+    maskRef.current = null
     localStreamRef.current?.getTracks().forEach(t => t.stop())
     processedStreamRef.current?.getTracks().forEach(t => t.stop())
     pcRef.current?.close()
@@ -432,43 +457,28 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
   }
 
   const toggleMic = () => {
-    const track = localStreamRef.current?.getAudioTracks()[0]
-    if (track) { track.enabled = !track.enabled; setMicOn(track.enabled) }
+    const t = localStreamRef.current?.getAudioTracks()[0]
+    if (t) { t.enabled = !t.enabled; setMicOn(t.enabled) }
   }
 
   const toggleCam = () => {
-    const track = localStreamRef.current?.getVideoTracks()[0]
-    if (track) { track.enabled = !track.enabled; setCamOn(track.enabled) }
+    const t = localStreamRef.current?.getVideoTracks()[0]
+    if (t) { t.enabled = !t.enabled; setCamOn(t.enabled) }
   }
 
-  const handleFilterSelect = (f) => { setActiveFilter(f); setShowPanel(null) }
   const handleBgSelect = (b) => {
     setActiveBg(b)
     setShowPanel(null)
-    // If switching to a bg-removal mode and MediaPipe not loaded yet
-    if (b.type !== 'none' && !segReadyRef.current && localStreamRef.current) {
-      const init = async () => {
-        setSegLoading(true)
-        try {
-          const SelfieSegmentation = await loadMediaPipe()
-          const seg = new SelfieSegmentation({ locateFile: (f) =>
-            `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`
-          })
-          seg.setOptions({ modelSelection: 1, selfieMode: false })
-          seg.onResults(onSegmentationResults)
-          await seg.initialize()
-          segmentationRef.current = seg
-          segReadyRef.current = true
-          setSegLoading(false)
-          startSegLoop()
-        } catch (err) {
-          console.error(err)
-          setSegError(true)
-          setSegLoading(false)
-        }
-      }
-      init()
+    if (b.type !== 'none' && segStatus === 'idle' && localStreamRef.current) {
+      loadSegmentation()
     }
+  }
+
+  const segLabel = () => {
+    if (segStatus === 'loading') return '⏳ Loading AI…'
+    if (segStatus === 'error')   return '⚠️ BG unavailable'
+    if (segStatus === 'ready')   return `${activeBg.emoji} ${activeBg.label}`
+    return `${activeBg.emoji} ${activeBg.label}`
   }
 
   return (
@@ -478,10 +488,10 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
         {/* Remote video */}
         <video ref={remoteVideoRef} className="vc-remote" autoPlay playsInline />
 
-        {/* Hidden raw camera video — MediaPipe reads from this */}
+        {/* Hidden raw camera — never shown, canvas reads from it */}
         <video ref={localVideoRef} className="vc-hidden-raw" autoPlay playsInline muted />
 
-        {/* Status overlay */}
+        {/* Connecting / ended overlay */}
         {callStatus !== 'active' && (
           <div className="vc-status-overlay">
             <div className="vc-avatar">
@@ -502,21 +512,15 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
           <div className="vc-duration">{formatDuration(duration)}</div>
         )}
 
-        {/* Active labels top-left */}
+        {/* Active labels */}
         {callStatus === 'active' && (activeFilter.id !== 'none' || activeBg.id !== 'none') && (
           <div className="vc-active-labels">
-            {activeFilter.id !== 'none' && (
-              <span className="vc-label">{activeFilter.emoji} {activeFilter.label}</span>
-            )}
-            {activeBg.id !== 'none' && (
-              <span className="vc-label">
-                {segLoading ? '⏳ Loading AI…' : segError ? '⚠️ BG failed' : `${activeBg.emoji} ${activeBg.label}`}
-              </span>
-            )}
+            {activeFilter.id !== 'none' && <span className="vc-label">{activeFilter.emoji} {activeFilter.label}</span>}
+            {activeBg.id    !== 'none' && <span className="vc-label">{segLabel()}</span>}
           </div>
         )}
 
-        {/* ── Filter panel ── */}
+        {/* Filter panel */}
         {showPanel === 'filters' && (
           <div className="vc-panel" onClick={e => e.stopPropagation()}>
             <p className="vc-panel-title">🎭 Filters</p>
@@ -525,7 +529,7 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
                 <button
                   key={f.id}
                   className={`vc-panel-item ${activeFilter.id === f.id ? 'active' : ''}`}
-                  onClick={() => handleFilterSelect(f)}
+                  onClick={() => { setActiveFilter(f); setShowPanel(null) }}
                 >
                   <span className="vc-panel-emoji">{f.emoji}</span>
                   <span className="vc-panel-label">{f.label}</span>
@@ -535,10 +539,10 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
           </div>
         )}
 
-        {/* ── Background panel ── */}
+        {/* Background panel */}
         {showPanel === 'backgrounds' && (
           <div className="vc-panel" onClick={e => e.stopPropagation()}>
-            <p className="vc-panel-title">🖼️ Backgrounds <span style={{ fontSize: 11, opacity: 0.6 }}>(AI powered)</span></p>
+            <p className="vc-panel-title">🖼️ Backgrounds</p>
             <div className="vc-panel-grid">
               {BACKGROUNDS.map(b => (
                 <button
@@ -546,8 +550,8 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
                   className={`vc-panel-item ${activeBg.id === b.id ? 'active' : ''}`}
                   onClick={() => handleBgSelect(b)}
                   style={
-                    b.type === 'color'
-                      ? { backgroundImage: `linear-gradient(135deg, ${b.value.join(',')})`, backgroundSize: 'cover' }
+                    b.type === 'gradient'
+                      ? { backgroundImage: `linear-gradient(135deg, ${b.colors.join(',')})` }
                       : b.type === 'image'
                       ? { backgroundImage: `url(${b.value})`, backgroundSize: 'cover', backgroundPosition: 'center' }
                       : {}
@@ -560,59 +564,51 @@ const VideoCall = ({ currentUser, chatUser, onClose }) => {
                 </button>
               ))}
             </div>
-            <p className="vc-panel-note">Uses AI to separate you from your real background</p>
+            {segStatus === 'loading' && (
+              <p className="vc-panel-note">⏳ Loading AI model… camera stays live</p>
+            )}
+            {segStatus === 'error' && (
+              <p className="vc-panel-note" style={{ color: '#ff7043' }}>
+                ⚠️ AI model failed to load. Background shown as overlay.
+              </p>
+            )}
           </div>
         )}
 
-        {/* Local PiP — canvas with filter + bg removal */}
+        {/* Local PiP — canvas output */}
         <div className="vc-local-wrapper">
           {camOn
-            ? <canvas ref={canvasRef} className="vc-local-canvas" />
+            ? <canvas ref={mainCanvasRef} className="vc-local-canvas" />
             : <div className="vc-cam-off-pip">📷 Off</div>
           }
         </div>
 
         {/* Controls */}
         <div className="vc-controls">
-          <button
-            className={`vc-btn ${micOn ? '' : 'vc-btn-off'}`}
-            onClick={toggleMic}
-            title={micOn ? 'Mute' : 'Unmute'}
-          >
-            {micOn ? '🎙️' : '🔇'}
-            <span>{micOn ? 'Mute' : 'Unmute'}</span>
+          <button className={`vc-btn ${micOn ? '' : 'vc-btn-off'}`} onClick={toggleMic} title="Mic">
+            {micOn ? '🎙️' : '🔇'}<span>{micOn ? 'Mute' : 'Unmute'}</span>
           </button>
 
           <button
             className={`vc-btn ${showPanel === 'filters' ? 'vc-btn-active' : ''}`}
-            onClick={(e) => { e.stopPropagation(); setShowPanel(p => p === 'filters' ? null : 'filters') }}
-            title="Filters"
+            onClick={e => { e.stopPropagation(); setShowPanel(p => p === 'filters' ? null : 'filters') }}
           >
-            🎭
-            <span>Filters</span>
+            🎭<span>Filters</span>
           </button>
 
-          <button className="vc-btn vc-btn-end" onClick={endCall} title="End call">
-            📵
-            <span>End</span>
+          <button className="vc-btn vc-btn-end" onClick={endCall}>
+            📵<span>End</span>
           </button>
 
           <button
             className={`vc-btn ${showPanel === 'backgrounds' ? 'vc-btn-active' : ''}`}
-            onClick={(e) => { e.stopPropagation(); setShowPanel(p => p === 'backgrounds' ? null : 'backgrounds') }}
-            title="Backgrounds"
+            onClick={e => { e.stopPropagation(); setShowPanel(p => p === 'backgrounds' ? null : 'backgrounds') }}
           >
-            🖼️
-            <span>BG</span>
+            🖼️<span>BG</span>
           </button>
 
-          <button
-            className={`vc-btn ${camOn ? '' : 'vc-btn-off'}`}
-            onClick={toggleCam}
-            title={camOn ? 'Camera off' : 'Camera on'}
-          >
-            {camOn ? '📹' : '🚫'}
-            <span>{camOn ? 'Camera' : 'Cam off'}</span>
+          <button className={`vc-btn ${camOn ? '' : 'vc-btn-off'}`} onClick={toggleCam} title="Camera">
+            {camOn ? '📹' : '🚫'}<span>{camOn ? 'Camera' : 'Off'}</span>
           </button>
         </div>
 
