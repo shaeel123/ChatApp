@@ -1,9 +1,25 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, viewport-fit=cover" />
+
+    <!-- Security: prevent MIME sniffing -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+
+    <!-- Security: prevent clickjacking -->
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+
+    <!-- Security: referrer policy -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Security: no cache for sensitive pages -->
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+
+    <!-- Prevent search engines from indexing (private app) -->
+    <meta name="robots" content="noindex, nofollow" />
+
     <link rel="icon" type="image/svg+xml" href="/chat_app.svg" />
     <title>BlueC</title>
   </head>
