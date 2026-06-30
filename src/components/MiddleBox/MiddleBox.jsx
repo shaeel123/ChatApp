@@ -54,9 +54,26 @@ const MiddleBox = () => {
   const tokenRef = useRef(null)
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
+  const emojiPickerRef = useRef(null)
+  const emojiBtnRef = useRef(null)
 
   useEffect(() => { userRef.current = user }, [user])
   useEffect(() => { chatUserRef.current = chatUser }, [chatUser])
+
+  // Close emoji picker when clicking anywhere outside it
+  useEffect(() => {
+    if (!showEmoji) return
+    const handleClickOutside = (e) => {
+      if (
+        emojiPickerRef.current && !emojiPickerRef.current.contains(e.target) &&
+        emojiBtnRef.current && !emojiBtnRef.current.contains(e.target)
+      ) {
+        setShowEmoji(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showEmoji])
 
   useEffect(() => {
     if (!chatUser) return
@@ -635,7 +652,7 @@ const clearChat = async () => {
 
       <div className="chat-input" style={{ background: wallpaper.inputBar }}>
         {showEmoji && (
-          <div className="emoji-picker">
+          <div className="emoji-picker" ref={emojiPickerRef}>
             <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} />
           </div>
         )}
@@ -651,7 +668,7 @@ const clearChat = async () => {
           style={{ background: 'transparent', color: wallpaper.id === 'default' ? '#333' : wallpaper.textReceived }}
         />
 
-        <span className="emoji-btn" onClick={() => setShowEmoji((prev) => !prev)}>😊</span>
+        <span className="emoji-btn" ref={emojiBtnRef} onClick={() => setShowEmoji((prev) => !prev)}>😊</span>
 
         <input
           ref={imageInputRef}
