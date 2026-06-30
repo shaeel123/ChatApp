@@ -3,7 +3,7 @@ import './MiddleBox.css'
 import assets from '../../assets/assets'
 import { supabase } from '../../config/supabase'
 import { useAppContext } from '../../context/AppContext'
-import EmojiPicker from 'emoji-picker-react'
+// TEMP DEBUG: import EmojiPicker from 'emoji-picker-react'
 import ReactDOM from 'react-dom'
 import VideoCall from '../VideoCall/VideoCall'
 
@@ -666,7 +666,8 @@ const clearChat = async () => {
       <div className="chat-input" style={{ background: wallpaper.inputBar }}>
         {showEmoji && (
           <div className="emoji-picker" ref={emojiPickerRef}>
-            <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} />
+            {/* TEMP DEBUG: <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} /> */}
+            <div style={{padding: 20, color: '#333'}}>Emoji picker temporarily disabled for debugging</div>
           </div>
         )}
 
