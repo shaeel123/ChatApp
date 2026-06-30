@@ -215,9 +215,17 @@ const MiddleBox = () => {
   }
 
   const sendMessage = async () => {
-    if (!input.trim() || !chatUser) return
+    console.log('[DEBUG] sendMessage called. input:', JSON.stringify(input), 'chatUser:', chatUser?.id)
+    if (!input.trim() || !chatUser) {
+      console.log('[DEBUG] sendMessage early-returned. input.trim():', input.trim(), 'chatUser exists:', !!chatUser)
+      return
+    }
     const cu = await getCurrentUser()
-    if (!cu) return
+    console.log('[DEBUG] getCurrentUser resolved:', cu?.id)
+    if (!cu) {
+      console.log('[DEBUG] sendMessage early-returned: no current user')
+      return
+    }
     const { error } = await supabase.from('messages').insert([{
       content: input,
       user_id: cu.id,
@@ -225,7 +233,8 @@ const MiddleBox = () => {
       username: cu.email,
       avatar_url: userData?.avatar_url
     }])
-    if (error) { console.error(error); return }
+    if (error) { console.error('[DEBUG] insert error:', error); return }
+    console.log('[DEBUG] message inserted successfully')
     setInput('')
     setShowEmoji(false)
   }
@@ -670,8 +679,10 @@ const clearChat = async () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
+            console.log('[DEBUG] onKeyDown fired, key:', e.key)
             if (e.key === 'Enter') {
               e.preventDefault()
+              console.log('[DEBUG] Enter detected, calling sendMessage')
               sendMessage()
               setShowEmoji(false)
             }
