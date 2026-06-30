@@ -61,6 +61,23 @@ const MiddleBox = () => {
   useEffect(() => { userRef.current = user }, [user])
   useEffect(() => { chatUserRef.current = chatUser }, [chatUser])
 
+  const sendMessageRef = useRef(null)
+
+  useEffect(() => {
+    const el = messageInputRef.current
+    if (!el) return
+    const handler = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        sendMessageRef.current?.()
+        setShowEmoji(false)
+      }
+    }
+    el.addEventListener('keydown', handler, true)
+    return () => el.removeEventListener('keydown', handler, true)
+  }, [])
+
   // Close emoji picker when clicking anywhere outside it
   useEffect(() => {
     if (!showEmoji) return
@@ -229,6 +246,7 @@ const MiddleBox = () => {
     setInput('')
     setShowEmoji(false)
   }
+  sendMessageRef.current = sendMessage
 
   const handleFileSelect = async (file, type) => {
     if (!file) return
@@ -669,19 +687,6 @@ const clearChat = async () => {
           placeholder="Send a message"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              e.stopPropagation()
-              sendMessage()
-              setShowEmoji(false)
-            }
-          }}
-          onKeyDownCapture={(e) => {
-            if (e.key === 'Enter') {
-              e.stopPropagation()
-            }
-          }}
           style={{ background: 'transparent', color: wallpaper.id === 'default' ? '#333' : wallpaper.textReceived }}
         />
 
