@@ -3,7 +3,7 @@ import './MiddleBox.css'
 import assets from '../../assets/assets'
 import { supabase } from '../../config/supabase'
 import { useAppContext } from '../../context/AppContext'
-// TEMP DEBUG: import EmojiPicker from 'emoji-picker-react'
+import EmojiPicker from 'emoji-picker-react'
 import ReactDOM from 'react-dom'
 import VideoCall from '../VideoCall/VideoCall'
 
@@ -215,17 +215,9 @@ const MiddleBox = () => {
   }
 
   const sendMessage = async () => {
-    console.log('[DEBUG] sendMessage called. input:', JSON.stringify(input), 'chatUser:', chatUser?.id)
-    if (!input.trim() || !chatUser) {
-      console.log('[DEBUG] sendMessage early-returned. input.trim():', input.trim(), 'chatUser exists:', !!chatUser)
-      return
-    }
+    if (!input.trim() || !chatUser) return
     const cu = await getCurrentUser()
-    console.log('[DEBUG] getCurrentUser resolved:', cu?.id)
-    if (!cu) {
-      console.log('[DEBUG] sendMessage early-returned: no current user')
-      return
-    }
+    if (!cu) return
     const { error } = await supabase.from('messages').insert([{
       content: input,
       user_id: cu.id,
@@ -233,8 +225,7 @@ const MiddleBox = () => {
       username: cu.email,
       avatar_url: userData?.avatar_url
     }])
-    if (error) { console.error('[DEBUG] insert error:', error); return }
-    console.log('[DEBUG] message inserted successfully')
+    if (error) { console.error(error); return }
     setInput('')
     setShowEmoji(false)
   }
@@ -666,8 +657,7 @@ const clearChat = async () => {
       <div className="chat-input" style={{ background: wallpaper.inputBar }}>
         {showEmoji && (
           <div className="emoji-picker" ref={emojiPickerRef}>
-            {/* TEMP DEBUG: <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} /> */}
-            <div style={{padding: 20, color: '#333'}}>Emoji picker temporarily disabled for debugging</div>
+            <EmojiPicker onEmojiClick={onEmojiClick} height={350} width={300} />
           </div>
         )}
 
@@ -680,12 +670,16 @@ const clearChat = async () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
-            console.log('[DEBUG] onKeyDown fired, key:', e.key)
             if (e.key === 'Enter') {
               e.preventDefault()
-              console.log('[DEBUG] Enter detected, calling sendMessage')
+              e.stopPropagation()
               sendMessage()
               setShowEmoji(false)
+            }
+          }}
+          onKeyDownCapture={(e) => {
+            if (e.key === 'Enter') {
+              e.stopPropagation()
             }
           }}
           style={{ background: 'transparent', color: wallpaper.id === 'default' ? '#333' : wallpaper.textReceived }}
