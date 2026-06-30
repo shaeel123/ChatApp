@@ -80,19 +80,6 @@ const MiddleBox = () => {
 
   // Reliable Enter-to-send: listens at document capture level so nothing can block it
   useEffect(() => {
-    const handleEnter = (e) => {
-      if (e.key !== 'Enter') return
-      if (document.activeElement !== messageInputRef.current) return
-      if (e.repeat) return
-      e.preventDefault()
-      e.stopPropagation()
-      sendMessage()
-    }
-    document.addEventListener('keydown', handleEnter, true)
-    return () => document.removeEventListener('keydown', handleEnter, true)
-  }, [input, chatUser])
-
-  useEffect(() => {
     if (!chatUser) return
     try {
       const saved = localStorage.getItem(`theme_${chatUser.id}`)
