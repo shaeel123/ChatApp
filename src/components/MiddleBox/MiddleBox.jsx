@@ -682,6 +682,13 @@ const clearChat = async () => {
           placeholder="Send a message"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              sendMessage()
+              setShowEmoji(false)
+            }
+          }}
           style={{ background: 'transparent', color: wallpaper.id === 'default' ? '#333' : wallpaper.textReceived }}
         />
 
