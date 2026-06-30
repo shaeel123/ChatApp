@@ -668,7 +668,12 @@ const clearChat = async () => {
           placeholder="Send a message"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') sendMessage() }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              sendMessage()
+            }
+          }}
           style={{ background: 'transparent', color: wallpaper.id === 'default' ? '#333' : wallpaper.textReceived }}
         />
 
@@ -698,7 +703,7 @@ const clearChat = async () => {
           🎥
         </label>
 
-        <img src={assets.send_button} alt="" onClick={sendMessage} />
+        <img src={assets.send_button} alt="" onClick={() => { sendMessage(); setShowEmoji(false) }} style={{ cursor: 'pointer' }} />
       </div>
 
       {/* ── Image preview portal ── */}
