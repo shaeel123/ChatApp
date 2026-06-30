@@ -64,15 +64,19 @@ const MiddleBox = () => {
   useEffect(() => {
     if (!showEmoji) return
     const handleClickOutside = (e) => {
-      if (
-        emojiPickerRef.current && !emojiPickerRef.current.contains(e.target) &&
-        emojiBtnRef.current && !emojiBtnRef.current.contains(e.target)
-      ) {
+      const clickedPicker = emojiPickerRef.current && emojiPickerRef.current.contains(e.target)
+      const clickedBtn    = emojiBtnRef.current && emojiBtnRef.current.contains(e.target)
+      if (!clickedPicker && !clickedBtn) {
         setShowEmoji(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    // Capture phase ensures this runs even if other elements stopPropagation()
+    document.addEventListener('mousedown', handleClickOutside, true)
+    document.addEventListener('touchstart', handleClickOutside, true)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true)
+      document.removeEventListener('touchstart', handleClickOutside, true)
+    }
   }, [showEmoji])
 
   useEffect(() => {
