@@ -56,6 +56,7 @@ const MiddleBox = () => {
   const videoInputRef = useRef(null)
   const emojiPickerRef = useRef(null)
   const emojiBtnRef = useRef(null)
+  const messageInputRef = useRef(null)
 
   useEffect(() => { userRef.current = user }, [user])
   useEffect(() => { chatUserRef.current = chatUser }, [chatUser])
@@ -70,14 +71,26 @@ const MiddleBox = () => {
         setShowEmoji(false)
       }
     }
-    // Capture phase ensures this runs even if other elements stopPropagation()
-    document.addEventListener('mousedown', handleClickOutside, true)
-    document.addEventListener('touchstart', handleClickOutside, true)
+    // Bubble phase, mouseup — does not interfere with React's synthetic click/keydown handling
+    document.addEventListener('mouseup', handleClickOutside)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside, true)
-      document.removeEventListener('touchstart', handleClickOutside, true)
+      document.removeEventListener('mouseup', handleClickOutside)
     }
   }, [showEmoji])
+
+  // Reliable Enter-to-send: listens at document capture level so nothing can block it
+  useEffect(() => {
+    const handleEnter = (e) => {
+      if (e.key !== 'Enter') return
+      if (document.activeElement !== messageInputRef.current) return
+      if (e.repeat) return
+      e.preventDefault()
+      e.stopPropagation()
+      sendMessage()
+    }
+    document.addEventListener('keydown', handleEnter, true)
+    return () => document.removeEventListener('keydown', handleEnter, true)
+  }, [input, chatUser])
 
   useEffect(() => {
     if (!chatUser) return
@@ -662,18 +675,13 @@ const clearChat = async () => {
         )}
 
         <input
+          ref={messageInputRef}
           id="chat-message"
           name="message"
           type="text"
           placeholder="Send a message"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              sendMessage()
-            }
-          }}
           style={{ background: 'transparent', color: wallpaper.id === 'default' ? '#333' : wallpaper.textReceived }}
         />
 
