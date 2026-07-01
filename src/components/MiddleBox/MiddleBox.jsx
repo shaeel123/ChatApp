@@ -72,13 +72,14 @@ const MiddleBox = () => {
     const raf = requestAnimationFrame(() => {
       const el = messageInputRef.current
       if (!el) return
-      const handler = (e) => {
-        if (e.key !== 'Enter') return
-        e.preventDefault()
-        e.stopImmediatePropagation()
-        sendMessageRef.current?.()
-        setShowEmoji(false)
-      }
+    const handler = (e) => {
+  if (e.key !== 'Enter') return
+  console.log('ENTER FIRED', { input: inputRef.current, chatUser: chatUserRef.current })
+  e.preventDefault()
+  e.stopImmediatePropagation()
+  sendMessageRef.current?.()
+  setShowEmoji(false)
+}
       el.addEventListener('keydown', handler, true)
       el._enterHandler = handler
     })
