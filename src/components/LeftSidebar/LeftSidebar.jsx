@@ -26,6 +26,8 @@ const LeftSidebar = () => {
   const channelRef = useRef(null)
   const clearChannelRef = useRef(null)
   const ringtoneRef = useRef(null)
+  const menuRef = useRef(null)
+  const menuBtnRef = useRef(null)
 
   // Load current auth user once
   useEffect(() => {
@@ -33,6 +35,20 @@ const LeftSidebar = () => {
       if (data?.user) setCurrentUser(data.user)
     })
   }, [])
+
+  // Close the 3-dot menu when clicking anywhere outside it
+  useEffect(() => {
+    if (!showMenu) return
+    const handleClickOutside = (e) => {
+      const clickedMenu = menuRef.current && menuRef.current.contains(e.target)
+      const clickedBtn = menuBtnRef.current && menuBtnRef.current.contains(e.target)
+      if (!clickedMenu && !clickedBtn) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mouseup', handleClickOutside)
+    return () => document.removeEventListener('mouseup', handleClickOutside)
+  }, [showMenu])
 
   // When incomingCall changes (set by AppContext), load caller profile and ring
   useEffect(() => {
@@ -322,12 +338,13 @@ const LeftSidebar = () => {
           </div>
           <div className="menu" style={{ position: 'relative' }}>
             <img
+              ref={menuBtnRef}
               src={assets.menu_icon}
               alt=""
               onClick={() => setShowMenu((prev) => !prev)}
             />
             {showMenu && (
-              <div className="sub-menu">
+              <div className="sub-menu" ref={menuRef}>
                 <p onClick={() => { navigate('/profile'); setShowMenu(false) }}>Edit Profile</p>
                 <hr />
                 <p onClick={handleDeleteAccount} style={{ color: 'red' }}>Delete Account</p>
