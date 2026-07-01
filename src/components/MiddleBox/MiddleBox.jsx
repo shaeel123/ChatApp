@@ -67,17 +67,18 @@ const MiddleBox = () => {
 
   // Reliable Enter-to-send: listens directly on the input element,
   // re-attached whenever chatUser changes so the element/handler is fresh
- useEffect(() => {
+useEffect(() => {
   if (!chatUser) return
   const handler = (e) => {
     if (e.key !== 'Enter') return
+    console.log('DOC ENTER FIRED', { active: document.activeElement, tag: document.activeElement?.tagName })
     const active = document.activeElement
     const msgInput = messageInputRef.current
-    // Only handle Enter if the message box is focused, or nothing else is
-    // (i.e. focus was lost after closing the emoji picker etc.)
-    if (active && active !== msgInput && active !== document.body && active.tagName !== undefined) {
-      // some other real input/element has focus (e.g. search box) — leave it alone
-      if (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA') return
+    if (active && active !== msgInput && active !== document.body) {
+      if (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA') {
+        console.log('BLOCKED — other input focused')
+        return
+      }
     }
     e.preventDefault()
     e.stopImmediatePropagation()
