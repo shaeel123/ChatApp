@@ -67,31 +67,26 @@ const MiddleBox = () => {
 
   // Reliable Enter-to-send: listens directly on the input element,
   // re-attached whenever chatUser changes so the element/handler is fresh
-  useEffect(() => {
-    if (!chatUser) return
-    const raf = requestAnimationFrame(() => {
-      const el = messageInputRef.current
-      if (!el) return
-    const handler = (e) => {
-  if (e.key !== 'Enter') return
-  console.log('ENTER FIRED', { input: inputRef.current, chatUser: chatUserRef.current })
-  e.preventDefault()
-  e.stopImmediatePropagation()
-  sendMessageRef.current?.()
-  setShowEmoji(false)
-}
-      el.addEventListener('keydown', handler, true)
-      el._enterHandler = handler
-    })
-    return () => {
-      cancelAnimationFrame(raf)
-      const el = messageInputRef.current
-      if (el && el._enterHandler) {
-        el.removeEventListener('keydown', el._enterHandler, true)
-        delete el._enterHandler
-      }
+ useEffect(() => {
+  if (!chatUser) return
+  const handler = (e) => {
+    if (e.key !== 'Enter') return
+    const active = document.activeElement
+    const msgInput = messageInputRef.current
+    // Only handle Enter if the message box is focused, or nothing else is
+    // (i.e. focus was lost after closing the emoji picker etc.)
+    if (active && active !== msgInput && active !== document.body && active.tagName !== undefined) {
+      // some other real input/element has focus (e.g. search box) — leave it alone
+      if (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA') return
     }
-  }, [chatUser])
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    sendMessageRef.current?.()
+    setShowEmoji(false)
+  }
+  document.addEventListener('keydown', handler, true)
+  return () => document.removeEventListener('keydown', handler, true)
+}, [chatUser])
 
   // Close emoji picker when clicking anywhere outside it
   useEffect(() => {
