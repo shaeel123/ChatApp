@@ -90,21 +90,24 @@ useEffect(() => {
 }, [chatUser])
 
   // Close emoji picker when clicking anywhere outside it
-  useEffect(() => {
-    if (!showEmoji) return
-    const handleClickOutside = (e) => {
-      const clickedPicker = emojiPickerRef.current && emojiPickerRef.current.contains(e.target)
-      const clickedBtn    = emojiBtnRef.current && emojiBtnRef.current.contains(e.target)
-      if (!clickedPicker && !clickedBtn) {
-        setShowEmoji(false)
-      }
+useEffect(() => {
+  if (!showEmoji) return
+  console.log('EMOJI LISTENER ATTACHED')
+  const handleClickOutside = (e) => {
+    const clickedPicker = emojiPickerRef.current && emojiPickerRef.current.contains(e.target)
+    const clickedBtn    = emojiBtnRef.current && emojiBtnRef.current.contains(e.target)
+    console.log('EMOJI CLICK OUTSIDE CHECK', { clickedPicker, clickedBtn, target: e.target })
+    if (!clickedPicker && !clickedBtn) {
+      setShowEmoji(false)
     }
-    // Bubble phase, mouseup — does not interfere with React's synthetic click/keydown handling
-    document.addEventListener('mouseup', handleClickOutside)
-    return () => {
-      document.removeEventListener('mouseup', handleClickOutside)
-    }
-  }, [showEmoji])
+  }
+  // Bubble phase, mouseup — does not interfere with React's synthetic click/keydown handling
+  document.addEventListener('mouseup', handleClickOutside)
+  return () => {
+    console.log('EMOJI LISTENER REMOVED')
+    document.removeEventListener('mouseup', handleClickOutside)
+  }
+}, [showEmoji])
 
   useEffect(() => {
     if (!chatUser) return
