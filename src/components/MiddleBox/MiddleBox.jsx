@@ -51,6 +51,7 @@ const MiddleBox = () => {
   const hoverTimer = useRef(null)
   const userRef = useRef(null)
   const chatUserRef = useRef(null)
+  const inputRef = useRef('')
   const tokenRef = useRef(null)
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
@@ -60,23 +61,36 @@ const MiddleBox = () => {
 
   useEffect(() => { userRef.current = user }, [user])
   useEffect(() => { chatUserRef.current = chatUser }, [chatUser])
+  useEffect(() => { inputRef.current = input }, [input])
 
   const sendMessageRef = useRef(null)
 
+  // Reliable Enter-to-send: listens directly on the input element,
+  // re-attached whenever chatUser changes so the element/handler is fresh
   useEffect(() => {
-    const el = messageInputRef.current
-    if (!el) return
-    const handler = (e) => {
-      if (e.key === 'Enter') {
+    if (!chatUser) return
+    const raf = requestAnimationFrame(() => {
+      const el = messageInputRef.current
+      if (!el) return
+      const handler = (e) => {
+        if (e.key !== 'Enter') return
         e.preventDefault()
         e.stopImmediatePropagation()
         sendMessageRef.current?.()
         setShowEmoji(false)
       }
+      el.addEventListener('keydown', handler, true)
+      el._enterHandler = handler
+    })
+    return () => {
+      cancelAnimationFrame(raf)
+      const el = messageInputRef.current
+      if (el && el._enterHandler) {
+        el.removeEventListener('keydown', el._enterHandler, true)
+        delete el._enterHandler
+      }
     }
-    el.addEventListener('keydown', handler, true)
-    return () => el.removeEventListener('keydown', handler, true)
-  }, [])
+  }, [chatUser])
 
   // Close emoji picker when clicking anywhere outside it
   useEffect(() => {
@@ -95,7 +109,6 @@ const MiddleBox = () => {
     }
   }, [showEmoji])
 
-  // Reliable Enter-to-send: listens at document capture level so nothing can block it
   useEffect(() => {
     if (!chatUser) return
     try {
@@ -232,18 +245,21 @@ const MiddleBox = () => {
   }
 
   const sendMessage = async () => {
-    if (!input.trim() || !chatUser) return
+    const currentInput = inputRef.current
+    const chat = chatUserRef.current
+    if (!currentInput || !currentInput.trim() || !chat) return
     const cu = await getCurrentUser()
     if (!cu) return
     const { error } = await supabase.from('messages').insert([{
-      content: input,
+      content: currentInput,
       user_id: cu.id,
-      receiver_id: chatUser.id,
+      receiver_id: chat.id,
       username: cu.email,
       avatar_url: userData?.avatar_url
     }])
     if (error) { console.error(error); return }
     setInput('')
+    inputRef.current = ''
     setShowEmoji(false)
   }
   sendMessageRef.current = sendMessage
@@ -262,9 +278,10 @@ const MiddleBox = () => {
   }
 
   const sendStagedFile = async () => {
-    if (!stagedFile || !chatUser) return
+    if (!stagedFile || !chatUserRef.current) return
     const cu = await getCurrentUser()
     if (!cu) return
+    const chat = chatUserRef.current
 
     setUploading(true)
     const { file, type, previewUrl } = stagedFile
@@ -313,7 +330,7 @@ const MiddleBox = () => {
         body: JSON.stringify({
           content: '',
           user_id: cu.id,
-          receiver_id: chatUser.id,
+          receiver_id: chat.id,
           username: cu.email,
           avatar_url: userData?.avatar_url || null,
           ...(type === 'image' ? { image_url: publicUrl } : { video_url: publicUrl })
