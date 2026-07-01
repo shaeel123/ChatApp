@@ -37,18 +37,23 @@ const LeftSidebar = () => {
   }, [])
 
   // Close the 3-dot menu when clicking anywhere outside it
-  useEffect(() => {
-    if (!showMenu) return
-    const handleClickOutside = (e) => {
-      const clickedMenu = menuRef.current && menuRef.current.contains(e.target)
-      const clickedBtn = menuBtnRef.current && menuBtnRef.current.contains(e.target)
-      if (!clickedMenu && !clickedBtn) {
-        setShowMenu(false)
-      }
+ useEffect(() => {
+  if (!showMenu) return
+  console.log('MENU LISTENER ATTACHED')
+  const handleClickOutside = (e) => {
+    const clickedMenu = menuRef.current && menuRef.current.contains(e.target)
+    const clickedBtn = menuBtnRef.current && menuBtnRef.current.contains(e.target)
+    console.log('CLICK OUTSIDE CHECK', { clickedMenu, clickedBtn, target: e.target })
+    if (!clickedMenu && !clickedBtn) {
+      setShowMenu(false)
     }
-    document.addEventListener('mouseup', handleClickOutside)
-    return () => document.removeEventListener('mouseup', handleClickOutside)
-  }, [showMenu])
+  }
+  document.addEventListener('mouseup', handleClickOutside)
+  return () => {
+    console.log('MENU LISTENER REMOVED')
+    document.removeEventListener('mouseup', handleClickOutside)
+  }
+}, [showMenu])
 
   // When incomingCall changes (set by AppContext), load caller profile and ring
   useEffect(() => {
