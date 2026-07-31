@@ -1,0 +1,110 @@
+.rs {
+  color: white;
+  background: rgba(0,8,25,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-left: 1px solid rgba(255,255,255,0.06);
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.rs-profile { padding-top: 50px; text-align: center; max-width: 75%; margin: auto; }
+.rs-profile img { width: 100px; aspect-ratio: 1/1; border-radius: 50%; border: 2px solid rgba(255,255,255,0.12); }
+.rs-profile h3 {
+  font-family: var(--font-display);
+  font-size: 18px; font-weight: 400;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  margin: 10px 0 4px;
+  letter-spacing: -0.3px;
+}
+.rs-profile p { font-size: 12px; color: var(--muted-foreground); font-weight: 300; }
+
+.rs hr { border-color: rgba(255,255,255,0.07); margin: 16px 0; }
+
+.rs-media { padding: 0 20px; font-size: 13px; color: var(--muted-foreground); }
+.rs-media div {
+  max-height: 180px; overflow-y: scroll;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px; margin-top: 8px;
+}
+.rs-media div img, .rs-media div video {
+  width: 100%; aspect-ratio: 1/1; object-fit: cover;
+  border-radius: 8px; display: block;
+}
+
+.rs button {
+  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: white; font-size: 13px; font-weight: 400;
+  padding: 10px 50px; border-radius: 100px; cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.2s, transform 0.2s;
+  white-space: nowrap;
+}
+.rs button:hover { background: rgba(255,255,255,0.14); transform: translateX(-50%) scale(1.03); }
+
+.rs-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--muted-foreground); }
+.rs-no-media { color: var(--muted-foreground); font-size: 13px; padding: 10px 0; }
+
+.rs-media-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px; display: block; cursor: pointer; transition: opacity 0.2s, transform 0.2s; }
+.rs-media-img:hover { opacity: 0.85; transform: scale(1.03); }
+
+.rs-media-video-thumb { position: relative; cursor: pointer; width: 100%; aspect-ratio: 1/1; }
+.rs-media-video-thumb video { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; display: block; pointer-events: none; }
+.rs-video-play-icon {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  background: rgba(0,0,0,0.55); color: white; border-radius: 50%;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; pointer-events: none;
+}
+
+/* Preview */
+.img-preview-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.88);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 99999; backdrop-filter: blur(8px); animation: fadeIn 0.2s ease;
+}
+.img-preview-box {
+  position: relative; width: 800px; max-width: 80vw;
+  border-radius: 18px; overflow: hidden;
+  box-shadow: 0 8px 60px rgba(0,0,0,0.8);
+  animation: scaleIn 0.2s ease;
+}
+.img-preview-box img { display: block; width: 100%; border-radius: 18px; }
+.img-preview-close {
+  position: absolute; top: 8px; right: 10px;
+  background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%;
+  width: 30px; height: 30px; font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+}
+.img-preview-close:hover { background: rgba(255,255,255,0.2); }
+.video-preview-box { background: transparent !important; box-shadow: none !important; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* 1*/
+.mobile-rs-back {
+  display: none;
+  padding: 16px 20px 0;
+  cursor: pointer;
+  font-size: 14px;
+  color: rgba(255,255,255,0.8);
+  touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+  .rs {
+    display: none; /* hidden by default on mobile */
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 500;
+  }
+  .rs.rs-mobile-open { display: block; }
+  .mobile-rs-back { display: block; }
+}
